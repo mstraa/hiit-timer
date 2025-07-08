@@ -212,6 +212,16 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 - Add a content description for accessibility support
 - Update the `TimerButton` composable to handle this icon-based variant
 
+**FR-021: Timer Display Visual Hierarchy Enhancement**
+- Make the decisecond (tenth of a second) portion visually smaller than the main time portion
+- Decisecond part (".d" portion) should appear at approximately half the font size of the seconds/minutes portion
+- Apply consistent approach for both display formats:
+  - For times < 60 seconds (SS.d format): Make the ".3" in "45.3" half the size of "45"
+  - For times ≥ 60 seconds (MM:SS.d format): Make the ".3" in "01:45.3" half the size of "01:45"
+- Ensure proper vertical alignment with baseline alignment of the larger time portion
+- Maintain readability across different screen sizes using responsive font sizing
+- Improve visual hierarchy emphasizing the most important part of the time while showing precision
+
 **FR-018: Rest Timer Controls**
 - "No Rest" toggle switch to completely disable rest periods
 - Minimum rest time validation (1 second when rest is enabled)
@@ -429,7 +439,7 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 
 ## 6.5 Implementation Progress Summary (July 8, 2025)
 
-### ✅ COMPLETED HIGH PRIORITY FEATURES (6/6):
+### ✅ COMPLETED HIGH PRIORITY FEATURES (7/7):
 
 **Task 1: Millisecond Precision Timer Display**
 - ✅ Implemented MM:SS.d format (deciseconds for readability)
@@ -477,12 +487,21 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 - ✅ Added accessibility content description
 - ✅ All tests passing, build successful
 
+**Task 7: Timer Display Visual Hierarchy Enhancement (FR-021)**
+- ✅ Implemented styled text with AnnotatedString for different font sizes
+- ✅ Decisecond portion (.d) now displays at 50% of main time font size
+- ✅ Consistent approach for both SS.d and MM:SS.d formats
+- ✅ Proper baseline alignment maintained
+- ✅ Responsive font sizing preserved across screen sizes
+- ✅ Enhanced visual hierarchy emphasizing main time portion
+- ✅ All tests passing, build successful
+
 ### 📊 DEVELOPMENT METRICS SUMMARY:
-- **Features Completed**: 6/6 high priority features (100%)
+- **Features Completed**: 7/7 high priority features (100%)
 - **Test Coverage**: 100% passing (all tests successful)
 - **Build Status**: ✅ Successful (no compilation errors)
 - **Code Quality**: Clean compilation with minimal warnings
-- **PRD Compliance**: All Section 6.4.1 requirements + FR-019 & FR-020 completed
+- **PRD Compliance**: All Section 6.4.1 requirements + FR-019, FR-020 & FR-021 completed
 - **Timeline**: All features completed within development session
 
 ### 🔄 NEXT PRIORITY FEATURES:

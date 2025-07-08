@@ -12,9 +12,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -316,6 +320,58 @@ private fun TimerHeader(
 }
 
 /**
+ * Format time with styled deciseconds (smaller font size for decimal portion)
+ */
+@Composable
+private fun formatTimeWithStyledDeciseconds(
+    timerStatus: TimerStatus,
+    mainFontSize: androidx.compose.ui.unit.TextUnit
+): AnnotatedString {
+    val timeString = timerStatus.formatTimeRemaining()
+    val decisecondFontSize = mainFontSize * 0.5f // Half the size for deciseconds
+
+    return buildAnnotatedString {
+        // Find the decimal point to split main time from deciseconds
+        val decimalIndex = timeString.indexOf('.')
+
+        if (decimalIndex != -1) {
+            // Main time portion (everything before the decimal)
+            withStyle(
+                style = SpanStyle(
+                    fontSize = mainFontSize,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+            ) {
+                append(timeString.substring(0, decimalIndex))
+            }
+
+            // Decisecond portion (decimal point and digit)
+            withStyle(
+                style = SpanStyle(
+                    fontSize = decisecondFontSize,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+            ) {
+                append(timeString.substring(decimalIndex))
+            }
+        } else {
+            // Fallback: if no decimal point found, use normal styling
+            withStyle(
+                style = SpanStyle(
+                    fontSize = mainFontSize,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+            ) {
+                append(timeString)
+            }
+        }
+    }
+}
+
+/**
  * Timer display component with adaptive sizing
  */
 @Composable
@@ -347,9 +403,9 @@ private fun TimerDisplay(
             )
         }
 
-        // Large timer display with adaptive font size
+        // Large timer display with adaptive font size and smaller deciseconds
         Text(
-            text = timerStatus.formatTimeRemaining(),
+            text = formatTimeWithStyledDeciseconds(timerStatus, adaptiveTimerFontSize),
             style = MaterialTheme.typography.displayLarge.copy(
                 fontSize = adaptiveTimerFontSize,
                 fontFamily = FontFamily.Monospace,
