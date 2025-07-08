@@ -23,7 +23,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hiittimer.app.data.Preset
 import com.hiittimer.app.data.TimerConfig
+import com.hiittimer.app.ui.components.PresetList
+import com.hiittimer.app.ui.components.RecentPresetsSection
+import com.hiittimer.app.ui.components.DeletePresetDialog
+import com.hiittimer.app.ui.presets.PresetViewModel
 import com.hiittimer.app.ui.utils.*
 
 /**
@@ -67,7 +73,7 @@ private fun isValidConfiguration(
 
 /**
  * Timer configuration modal with semi-transparent background (FR-016)
- * Contains work time, rest time, rounds, and preset management
+ * Contains work time, rest time, rounds, and preset management (FR-008)
  */
 @Composable
 fun TimerConfigModal(
@@ -75,7 +81,8 @@ fun TimerConfigModal(
     onClose: () -> Unit,
     config: TimerConfig,
     onConfigUpdate: (TimerConfig) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    presetViewModel: PresetViewModel = viewModel()
 ) {
     // Modal with fade animation (300ms duration as per FR-016)
     AnimatedVisibility(
@@ -112,7 +119,8 @@ fun TimerConfigModal(
                     TimerConfigContent(
                         config = config,
                         onConfigUpdate = onConfigUpdate,
-                        onClose = onClose
+                        onClose = onClose,
+                        presetViewModel = presetViewModel
                     )
                 }
             }
@@ -121,19 +129,28 @@ fun TimerConfigModal(
 }
 
 /**
- * Content of the timer configuration modal
+ * Content of the timer configuration modal with preset management (FR-008)
  */
 @Composable
 private fun TimerConfigContent(
     config: TimerConfig,
     onConfigUpdate: (TimerConfig) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    presetViewModel: PresetViewModel
 ) {
     var workTime by remember { mutableStateOf(config.workTimeSeconds.toString()) }
     var restTime by remember { mutableStateOf(config.restTimeSeconds.toString()) }
     var rounds by remember { mutableStateOf(config.totalRounds.toString()) }
     var isUnlimited by remember { mutableStateOf(config.isUnlimited) }
     var noRest by remember { mutableStateOf(config.noRest) }
+
+    // Tab state for configuration vs presets (FR-008)
+    var selectedTab by remember { mutableStateOf(0) }
+    val tabs = listOf("Configuration", "Presets")
+
+    // Preset management state
+    val presetUiState by presetViewModel.uiState.collectAsState()
+    var presetToDelete by remember { mutableStateOf<Preset?>(null) }
 
     val scrollState = rememberScrollState()
     val adaptivePadding = getAdaptivePadding()
@@ -150,7 +167,7 @@ private fun TimerConfigContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = adaptiveSpacing * 2),
+                .padding(bottom = adaptiveSpacing),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -159,7 +176,7 @@ private fun TimerConfigContent(
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            
+
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.Default.Close,
@@ -168,6 +185,27 @@ private fun TimerConfigContent(
                 )
             }
         }
+
+        // Tab row for Configuration vs Presets (FR-008)
+        TabRow(
+            selectedTabIndex = selectedTab,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(adaptiveSpacing))
 
         // Work time input
         OutlinedTextField(

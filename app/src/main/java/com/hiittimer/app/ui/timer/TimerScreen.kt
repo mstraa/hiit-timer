@@ -35,6 +35,7 @@ import com.hiittimer.app.ui.components.IntervalTransitionEffect
 import com.hiittimer.app.ui.components.TimerConfigButton
 import com.hiittimer.app.ui.components.TimerConfigModal
 import com.hiittimer.app.ui.components.VisualFeedbackOverlay
+import com.hiittimer.app.ui.fullscreen.FullscreenController
 import com.hiittimer.app.ui.theme.HIITColors
 import com.hiittimer.app.ui.utils.*
 
@@ -53,6 +54,13 @@ fun TimerScreen(
     var isHamburgerMenuOpen by remember { mutableStateOf(false) }
     var isTimerConfigOpen by remember { mutableStateOf(false) }
 
+    // Fullscreen mode controller (FR-019: True Fullscreen Mode)
+    FullscreenController(
+        timerState = timerStatus.state,
+        isSettingsOpen = isHamburgerMenuOpen,
+        isConfigOpen = isTimerConfigOpen
+    )
+
     // Responsive design values (FR-015: Responsive Design)
     val screenSize = getScreenSize()
     val isLandscapeMode = isLandscape()
@@ -67,7 +75,13 @@ fun TimerScreen(
         else -> if (isDarkTheme) HIITColors.RestIndicatorDark else HIITColors.RestIndicatorLight
     }
     
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            // FR-019: Edge-to-edge content with appropriate padding for gesture areas
+            .padding(horizontal = 16.dp) // Minimum margins for gesture navigation
+    ) {
         // Adaptive layout based on orientation (FR-015: Landscape support)
         if (isLandscapeMode) {
             LandscapeTimerLayout(
