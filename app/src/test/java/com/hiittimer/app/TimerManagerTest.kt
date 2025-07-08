@@ -120,13 +120,37 @@ class TimerManagerTest {
         val unlimitedStatus = status.copy(config = unlimitedConfig, currentRound = 7)
         assertEquals("Round 7", unlimitedStatus.getRoundProgressText())
 
-        // Test millisecond formatting
+        // Test millisecond formatting for time >= 60 seconds
         val statusWithMs = TimerStatus(
             timeRemainingSeconds = 65,
             timeRemainingMilliseconds = 234,
             config = config
         )
         assertEquals("01:05.2", statusWithMs.formatTimeRemaining())
+
+        // Test FR-019: Conditional formatting for time < 60 seconds
+        val statusUnder60 = TimerStatus(
+            timeRemainingSeconds = 45,
+            timeRemainingMilliseconds = 300,
+            config = config
+        )
+        assertEquals("45.3", statusUnder60.formatTimeRemaining())
+
+        // Test edge case: exactly 60 seconds
+        val statusExactly60 = TimerStatus(
+            timeRemainingSeconds = 60,
+            timeRemainingMilliseconds = 0,
+            config = config
+        )
+        assertEquals("01:00.0", statusExactly60.formatTimeRemaining())
+
+        // Test edge case: less than 10 seconds
+        val statusUnder10 = TimerStatus(
+            timeRemainingSeconds = 5,
+            timeRemainingMilliseconds = 800,
+            config = config
+        )
+        assertEquals("05.8", statusUnder10.formatTimeRemaining())
     }
 
     @Test

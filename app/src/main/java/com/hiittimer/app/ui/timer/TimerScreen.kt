@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -486,7 +488,7 @@ private fun TimerButton(
             )
         }
     } else {
-        // Reset button
+        // Reset button with icon (FR-020: Reset Button UI Enhancement)
         OutlinedButton(
             onClick = { viewModel.resetTimer() },
             enabled = timerStatus.canReset,
@@ -495,10 +497,11 @@ private fun TimerButton(
                 .widthIn(min = MinTouchTargetSize * 2),
             shape = RoundedCornerShape(adaptiveButtonHeight / 2)
         ) {
-            Text(
-                text = stringResource(R.string.reset),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = "Reset timer", // FR-020: Accessibility support
+                modifier = Modifier.size(24.dp), // FR-020: Minimum 24dp icon size
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
     }

@@ -195,6 +195,23 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 - High contrast display for improved readability during workouts
 - Consistent formatting across all timer states (work, rest, paused)
 
+**FR-019: Timer Display Format Enhancement**
+- When work or rest interval time is less than 60 seconds:
+  - Display timer in "SS.d" format (seconds and deciseconds only)
+  - Hide minutes portion for improved readability
+  - Example: "45.3" instead of "00:45.3"
+- When time is 60 seconds or greater:
+  - Continue using the "MM:SS.d" format as currently implemented
+- This format change applies to both work and rest intervals
+- Update the `formatTimeRemaining()` method to implement this conditional formatting
+
+**FR-020: Reset Button UI Enhancement**
+- Replace the text "Reset" on the reset button with a standard reset/refresh icon (↻)
+- Maintain the current 20% width allocation for the reset button
+- Ensure the icon has sufficient size for touch targets (minimum 24dp)
+- Add a content description for accessibility support
+- Update the `TimerButton` composable to handle this icon-based variant
+
 **FR-018: Rest Timer Controls**
 - "No Rest" toggle switch to completely disable rest periods
 - Minimum rest time validation (1 second when rest is enabled)
@@ -412,7 +429,7 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 
 ## 6.5 Implementation Progress Summary (July 8, 2025)
 
-### ✅ COMPLETED HIGH PRIORITY FEATURES:
+### ✅ COMPLETED HIGH PRIORITY FEATURES (6/6):
 
 **Task 1: Millisecond Precision Timer Display**
 - ✅ Implemented MM:SS.d format (deciseconds for readability)
@@ -444,6 +461,29 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 - ✅ Reset button now occupies 20% of control area width
 - ✅ Proper spacing and touch targets maintained
 - ✅ All tests passing, build successful
+
+**Task 5: Timer Display Format Enhancement (FR-019)**
+- ✅ Conditional formatting based on time remaining
+- ✅ Less than 60 seconds: "SS.d" format (e.g., "45.3")
+- ✅ 60 seconds or greater: "MM:SS.d" format (e.g., "01:45.3")
+- ✅ Updated `formatTimeRemaining()` method
+- ✅ Comprehensive test coverage for all edge cases
+- ✅ All tests passing, build successful
+
+**Task 6: Reset Button UI Enhancement (FR-020)**
+- ✅ Replaced text "Reset" with refresh icon (↻)
+- ✅ Maintained 20% width allocation
+- ✅ Icon size 24dp for proper touch targets
+- ✅ Added accessibility content description
+- ✅ All tests passing, build successful
+
+### 📊 DEVELOPMENT METRICS SUMMARY:
+- **Features Completed**: 6/6 high priority features (100%)
+- **Test Coverage**: 100% passing (all tests successful)
+- **Build Status**: ✅ Successful (no compilation errors)
+- **Code Quality**: Clean compilation with minimal warnings
+- **PRD Compliance**: All Section 6.4.1 requirements + FR-019 & FR-020 completed
+- **Timeline**: All features completed within development session
 
 ### 🔄 NEXT PRIORITY FEATURES:
 - **True Fullscreen Mode Implementation** (FR-004)
