@@ -25,11 +25,12 @@ data class TimerConfig(
     val workTimeSeconds: Int = 20,
     val restTimeSeconds: Int = 10,
     val totalRounds: Int = 5,
-    val isUnlimited: Boolean = false
+    val isUnlimited: Boolean = false,
+    val noRest: Boolean = false // FR-001: "No Rest" toggle to disable rest periods
 ) {
     init {
         require(workTimeSeconds in 5..900) { "Work time must be between 5 and 900 seconds" }
-        require(restTimeSeconds in 5..300) { "Rest time must be between 5 and 300 seconds" }
+        require(noRest || restTimeSeconds in 5..300) { "Rest time must be between 5 and 300 seconds when rest is enabled" }
         require(totalRounds in 1..99 || isUnlimited) { "Total rounds must be between 1 and 99 or unlimited" }
     }
 }
@@ -41,6 +42,7 @@ data class TimerStatus(
     val state: TimerState = TimerState.IDLE,
     val currentInterval: IntervalType = IntervalType.WORK,
     val timeRemainingSeconds: Int = 0,
+    val timeRemainingMilliseconds: Int = 0, // FR-017: Millisecond precision
     val currentRound: Int = 1,
     val config: TimerConfig = TimerConfig()
 ) {
@@ -55,12 +57,13 @@ data class TimerStatus(
     val canReset: Boolean get() = state != TimerState.IDLE
     
     /**
-     * Format time remaining as MM:SS
+     * Format time remaining as MM:SS.mmm (FR-017: Millisecond precision)
      */
     fun formatTimeRemaining(): String {
         val minutes = timeRemainingSeconds / 60
         val seconds = timeRemainingSeconds % 60
-        return String.format("%02d:%02d", minutes, seconds)
+        val milliseconds = timeRemainingMilliseconds / 100 // Display deciseconds (0-9)
+        return String.format("%02d:%02d.%01d", minutes, seconds, milliseconds)
     }
     
     /**

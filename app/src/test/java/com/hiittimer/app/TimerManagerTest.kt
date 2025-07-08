@@ -20,6 +20,7 @@ class TimerManagerTest {
         assertEquals(10, config.restTimeSeconds)
         assertEquals(5, config.totalRounds)
         assertEquals(false, config.isUnlimited)
+        assertEquals(false, config.noRest)
     }
 
     @Test
@@ -29,6 +30,7 @@ class TimerManagerTest {
         assertEquals(TimerState.IDLE, status.state)
         assertEquals(IntervalType.WORK, status.currentInterval)
         assertEquals(0, status.timeRemainingSeconds)
+        assertEquals(0, status.timeRemainingMilliseconds)
         assertEquals(1, status.currentRound)
         assertTrue(status.canStart)
         assertFalse(status.canPause)
@@ -105,16 +107,54 @@ class TimerManagerTest {
         val config = TimerConfig(workTimeSeconds = 125, restTimeSeconds = 10, totalRounds = 3)
         val status = com.hiittimer.app.data.TimerStatus(
             timeRemainingSeconds = 125,
+            timeRemainingMilliseconds = 750,
             currentRound = 2,
             config = config
         )
-        
-        assertEquals("02:05", status.formatTimeRemaining())
+
+        assertEquals("02:05.7", status.formatTimeRemaining())
         assertEquals("Round 2 of 3", status.getRoundProgressText())
-        
+
         // Test unlimited rounds
         val unlimitedConfig = TimerConfig(workTimeSeconds = 20, restTimeSeconds = 10, isUnlimited = true)
         val unlimitedStatus = status.copy(config = unlimitedConfig, currentRound = 7)
         assertEquals("Round 7", unlimitedStatus.getRoundProgressText())
+
+        // Test millisecond formatting
+        val statusWithMs = TimerStatus(
+            timeRemainingSeconds = 65,
+            timeRemainingMilliseconds = 234,
+            config = config
+        )
+        assertEquals("01:05.2", statusWithMs.formatTimeRemaining())
+    }
+
+    @Test
+    fun `timer config with no rest works correctly`() {
+        // Test "No Rest" mode configuration (FR-001)
+        val noRestConfig = TimerConfig(
+            workTimeSeconds = 30,
+            restTimeSeconds = 10, // This should be ignored when noRest = true
+            totalRounds = 3,
+            isUnlimited = false,
+            noRest = true
+        )
+
+        assertEquals(30, noRestConfig.workTimeSeconds)
+        assertEquals(10, noRestConfig.restTimeSeconds)
+        assertEquals(3, noRestConfig.totalRounds)
+        assertEquals(false, noRestConfig.isUnlimited)
+        assertEquals(true, noRestConfig.noRest)
+
+        // Test that rest time validation is skipped when noRest = true
+        val noRestConfigWithInvalidRest = TimerConfig(
+            workTimeSeconds = 30,
+            restTimeSeconds = 1, // This would normally be invalid, but should be allowed with noRest = true
+            totalRounds = 3,
+            isUnlimited = false,
+            noRest = true
+        )
+
+        assertEquals(true, noRestConfigWithInvalidRest.noRest)
     }
 }

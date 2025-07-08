@@ -23,7 +23,11 @@ import com.hiittimer.app.data.IntervalType
 import com.hiittimer.app.data.TimerState
 import com.hiittimer.app.data.TimerStatus
 import com.hiittimer.app.ui.components.AudioToggleButton
+import com.hiittimer.app.ui.components.HamburgerMenuButton
+import com.hiittimer.app.ui.components.HamburgerMenuPanel
 import com.hiittimer.app.ui.components.IntervalTransitionEffect
+import com.hiittimer.app.ui.components.TimerConfigButton
+import com.hiittimer.app.ui.components.TimerConfigModal
 import com.hiittimer.app.ui.components.VisualFeedbackOverlay
 import com.hiittimer.app.ui.theme.HIITColors
 import com.hiittimer.app.ui.utils.*
@@ -36,7 +40,12 @@ fun TimerScreen(
 ) {
     val timerStatus by viewModel.timerStatus.collectAsState()
     val audioSettings by viewModel.audioSettings.collectAsState()
+    val themePreference by viewModel.themePreference.collectAsState()
     val isDarkTheme = isSystemInDarkTheme()
+
+    // State for new UI components (FR-016: Settings UI Reorganization)
+    var isHamburgerMenuOpen by remember { mutableStateOf(false) }
+    var isTimerConfigOpen by remember { mutableStateOf(false) }
 
     // Responsive design values (FR-015: Responsive Design)
     val screenSize = getScreenSize()
@@ -64,7 +73,8 @@ fun TimerScreen(
                 adaptiveButtonHeight = adaptiveButtonHeight,
                 adaptiveTimerFontSize = adaptiveTimerFontSize,
                 viewModel = viewModel,
-                onNavigateToConfig = onNavigateToConfig
+                onOpenHamburgerMenu = { isHamburgerMenuOpen = true },
+                onOpenTimerConfig = { isTimerConfigOpen = true }
             )
         } else {
             PortraitTimerLayout(
@@ -76,7 +86,8 @@ fun TimerScreen(
                 adaptiveButtonHeight = adaptiveButtonHeight,
                 adaptiveTimerFontSize = adaptiveTimerFontSize,
                 viewModel = viewModel,
-                onNavigateToConfig = onNavigateToConfig
+                onOpenHamburgerMenu = { isHamburgerMenuOpen = true },
+                onOpenTimerConfig = { isTimerConfigOpen = true }
             )
         }
 
@@ -91,6 +102,33 @@ fun TimerScreen(
         IntervalTransitionEffect(
             timerStatus = timerStatus,
             modifier = Modifier.fillMaxSize()
+        )
+
+        // Hamburger menu panel (FR-016: Settings UI Reorganization)
+        HamburgerMenuPanel(
+            isOpen = isHamburgerMenuOpen,
+            onClose = { isHamburgerMenuOpen = false },
+            audioSettings = audioSettings,
+            themePreference = themePreference,
+            onToggleAudio = { viewModel.toggleAudio() },
+            onVolumeChange = { volume -> viewModel.setAudioVolume(volume) },
+            onThemeChange = { preference -> viewModel.setThemePreference(preference) }
+        )
+
+        // Timer configuration modal (FR-016: Settings UI Reorganization)
+        TimerConfigModal(
+            isOpen = isTimerConfigOpen,
+            onClose = { isTimerConfigOpen = false },
+            config = timerStatus.config,
+            onConfigUpdate = { config ->
+                viewModel.updateConfig(
+                    workTimeSeconds = config.workTimeSeconds,
+                    restTimeSeconds = config.restTimeSeconds,
+                    totalRounds = config.totalRounds,
+                    isUnlimited = config.isUnlimited,
+                    noRest = config.noRest
+                )
+            }
         )
     }
 }
@@ -108,7 +146,8 @@ private fun PortraitTimerLayout(
     adaptiveButtonHeight: Dp,
     adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit,
     viewModel: TimerViewModel,
-    onNavigateToConfig: () -> Unit
+    onOpenHamburgerMenu: () -> Unit,
+    onOpenTimerConfig: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -122,7 +161,8 @@ private fun PortraitTimerLayout(
             audioSettings = audioSettings,
             adaptiveSpacing = adaptiveSpacing,
             viewModel = viewModel,
-            onNavigateToConfig = onNavigateToConfig
+            onOpenHamburgerMenu = onOpenHamburgerMenu,
+            onOpenTimerConfig = onOpenTimerConfig
         )
 
         Spacer(modifier = Modifier.height(adaptiveSpacing * 2))
@@ -165,7 +205,8 @@ private fun LandscapeTimerLayout(
     adaptiveButtonHeight: Dp,
     adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit,
     viewModel: TimerViewModel,
-    onNavigateToConfig: () -> Unit
+    onOpenHamburgerMenu: () -> Unit,
+    onOpenTimerConfig: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -178,7 +219,8 @@ private fun LandscapeTimerLayout(
             audioSettings = audioSettings,
             adaptiveSpacing = adaptiveSpacing,
             viewModel = viewModel,
-            onNavigateToConfig = onNavigateToConfig,
+            onOpenHamburgerMenu = onOpenHamburgerMenu,
+            onOpenTimerConfig = onOpenTimerConfig,
             isCompact = true
         )
 
@@ -233,7 +275,8 @@ private fun TimerHeader(
     audioSettings: AudioSettings,
     adaptiveSpacing: Dp,
     viewModel: TimerViewModel,
-    onNavigateToConfig: () -> Unit,
+    onOpenHamburgerMenu: () -> Unit,
+    onOpenTimerConfig: () -> Unit,
     isCompact: Boolean = false
 ) {
     Row(
@@ -247,17 +290,9 @@ private fun TimerHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(adaptiveSpacing)
         ) {
-            TextButton(
-                onClick = onNavigateToConfig,
-                modifier = Modifier.heightIn(min = MinTouchTargetSize)
-            ) {
-                Text("Settings")
-            }
-
-            // Audio toggle button (FR-007: Audio Controls)
-            AudioToggleButton(
-                audioSettings = audioSettings,
-                onToggleAudio = { viewModel.toggleAudio() },
+            // Hamburger menu button (FR-016: Settings UI Reorganization)
+            HamburgerMenuButton(
+                onClick = onOpenHamburgerMenu,
                 modifier = Modifier.size(MinTouchTargetSize)
             )
         }
@@ -270,12 +305,11 @@ private fun TimerHeader(
             )
         }
 
-        TextButton(
-            onClick = { /* TODO: Presets */ },
-            modifier = Modifier.heightIn(min = MinTouchTargetSize)
-        ) {
-            Text("Presets")
-        }
+        // Timer configuration button (FR-016: Settings UI Reorganization)
+        TimerConfigButton(
+            onClick = onOpenTimerConfig,
+            modifier = Modifier.size(MinTouchTargetSize)
+        )
     }
 }
 
@@ -385,29 +419,29 @@ private fun TimerControls(
             )
         }
     } else {
-        // Horizontal layout for portrait mode
+        // Horizontal layout for portrait mode (FR-016: 80%/20% width split)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = adaptiveSpacing),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.spacedBy(adaptiveSpacing)
         ) {
+            // Start button occupying 80% of control area width (FR-016)
             TimerButton(
                 timerStatus = timerStatus,
                 adaptiveButtonHeight = adaptiveButtonHeight,
                 viewModel = viewModel,
                 isPrimary = true,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(0.8f)
             )
 
-            Spacer(modifier = Modifier.width(width = adaptiveSpacing))
-
+            // Reset button occupying 20% of control area width (FR-016)
             TimerButton(
                 timerStatus = timerStatus,
                 adaptiveButtonHeight = adaptiveButtonHeight,
                 viewModel = viewModel,
                 isPrimary = false,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(0.2f)
             )
         }
     }

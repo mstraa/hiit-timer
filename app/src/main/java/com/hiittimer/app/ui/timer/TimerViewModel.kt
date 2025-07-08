@@ -61,14 +61,16 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
         workTimeSeconds: Int = timerStatus.value.config.workTimeSeconds,
         restTimeSeconds: Int = timerStatus.value.config.restTimeSeconds,
         totalRounds: Int = timerStatus.value.config.totalRounds,
-        isUnlimited: Boolean = timerStatus.value.config.isUnlimited
+        isUnlimited: Boolean = timerStatus.value.config.isUnlimited,
+        noRest: Boolean = timerStatus.value.config.noRest
     ) {
         try {
             val newConfig = TimerConfig(
                 workTimeSeconds = workTimeSeconds,
                 restTimeSeconds = restTimeSeconds,
                 totalRounds = totalRounds,
-                isUnlimited = isUnlimited
+                isUnlimited = isUnlimited,
+                noRest = noRest
             )
             timerManager.updateConfig(newConfig)
         } catch (e: IllegalArgumentException) {
