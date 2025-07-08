@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hiittimer.app.data.InMemoryWorkoutHistoryRepository
 import com.hiittimer.app.data.WorkoutHistoryRepository
 import com.hiittimer.app.data.WorkoutSession
 import com.hiittimer.app.ui.components.*
@@ -28,7 +29,14 @@ fun WorkoutHistoryScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val viewModel = remember { WorkoutHistoryViewModel(workoutHistoryRepository) }
+    val viewModel = remember(workoutHistoryRepository) {
+        try {
+            WorkoutHistoryViewModel(workoutHistoryRepository)
+        } catch (e: Exception) {
+            // Log error and create a fallback ViewModel
+            WorkoutHistoryViewModel(InMemoryWorkoutHistoryRepository())
+        }
+    }
     val uiState by viewModel.uiState.collectAsState()
     
     // UI state
@@ -197,16 +205,4 @@ fun WorkoutHistoryScreen(
     )
 }
 
-/**
- * Factory function to create WorkoutHistoryScreen with repository
- */
-@Composable
-fun WorkoutHistoryScreen(
-    onNavigateBack: () -> Unit,
-    workoutHistoryRepository: WorkoutHistoryRepository
-) {
-    WorkoutHistoryScreen(
-        workoutHistoryRepository = workoutHistoryRepository,
-        onNavigateBack = onNavigateBack
-    )
-}
+

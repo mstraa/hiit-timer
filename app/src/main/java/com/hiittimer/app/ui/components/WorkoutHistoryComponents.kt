@@ -215,23 +215,27 @@ fun WorkoutHistoryFilters(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 com.hiittimer.app.data.DateFilter.values().forEach { dateFilter ->
-                    FilterChip(
-                        onClick = { 
+                    val isSelected = currentFilter.dateFilter == dateFilter
+                    Button(
+                        onClick = {
                             onFilterChange(currentFilter.copy(dateFilter = dateFilter))
                         },
-                        label = { 
-                            Text(
-                                text = when (dateFilter) {
-                                    com.hiittimer.app.data.DateFilter.LAST_7_DAYS -> "7 Days"
-                                    com.hiittimer.app.data.DateFilter.LAST_30_DAYS -> "30 Days"
-                                    com.hiittimer.app.data.DateFilter.LAST_3_MONTHS -> "3 Months"
-                                    com.hiittimer.app.data.DateFilter.ALL_TIME -> "All Time"
-                                },
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        },
-                        selected = currentFilter.dateFilter == dateFilter
-                    )
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                        ),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            text = when (dateFilter) {
+                                com.hiittimer.app.data.DateFilter.LAST_7_DAYS -> "7 Days"
+                                com.hiittimer.app.data.DateFilter.LAST_30_DAYS -> "30 Days"
+                                com.hiittimer.app.data.DateFilter.LAST_3_MONTHS -> "3 Months"
+                                com.hiittimer.app.data.DateFilter.ALL_TIME -> "All Time"
+                            },
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
             
@@ -241,22 +245,26 @@ fun WorkoutHistoryFilters(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 com.hiittimer.app.data.CompletionFilter.values().forEach { completionFilter ->
-                    FilterChip(
-                        onClick = { 
+                    val isSelected = currentFilter.completionFilter == completionFilter
+                    Button(
+                        onClick = {
                             onFilterChange(currentFilter.copy(completionFilter = completionFilter))
                         },
-                        label = { 
-                            Text(
-                                text = when (completionFilter) {
-                                    com.hiittimer.app.data.CompletionFilter.ALL -> "All"
-                                    com.hiittimer.app.data.CompletionFilter.COMPLETED_ONLY -> "Completed"
-                                    com.hiittimer.app.data.CompletionFilter.INCOMPLETE_ONLY -> "Incomplete"
-                                },
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        },
-                        selected = currentFilter.completionFilter == completionFilter
-                    )
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                        ),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            text = when (completionFilter) {
+                                com.hiittimer.app.data.CompletionFilter.ALL -> "All"
+                                com.hiittimer.app.data.CompletionFilter.COMPLETED_ONLY -> "Completed"
+                                com.hiittimer.app.data.CompletionFilter.INCOMPLETE_ONLY -> "Incomplete"
+                            },
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
         }

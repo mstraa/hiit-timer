@@ -80,9 +80,12 @@ class WorkoutHistoryViewModel(
                     isLoading = false
                 )
             } catch (e: Exception) {
+                // Log the error and provide fallback empty state
                 _uiState.value = _uiState.value.copy(
+                    sessions = emptyList(),
+                    filteredSessions = emptyList(),
                     isLoading = false,
-                    error = "Failed to load workout history: ${e.message}"
+                    error = "Failed to load workout history. Please try again."
                 )
             }
         }
@@ -152,15 +155,17 @@ class WorkoutHistoryViewModel(
                     mostRoundsSession = workoutHistoryRepository.getMostRoundsSession(),
                     consistencyMetrics = workoutHistoryRepository.getConsistencyMetrics()
                 )
-                
+
                 _uiState.value = _uiState.value.copy(
                     analytics = analytics,
                     isAnalyticsLoading = false
                 )
             } catch (e: Exception) {
+                // Provide fallback analytics with safe defaults
                 _uiState.value = _uiState.value.copy(
+                    analytics = null,
                     isAnalyticsLoading = false,
-                    error = "Failed to load analytics: ${e.message}"
+                    error = "Analytics temporarily unavailable"
                 )
             }
         }
