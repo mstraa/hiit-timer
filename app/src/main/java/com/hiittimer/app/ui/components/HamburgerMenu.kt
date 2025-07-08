@@ -11,12 +11,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.hiittimer.app.audio.AudioSettings
@@ -55,6 +57,7 @@ fun HamburgerMenuPanel(
     onToggleAudio: () -> Unit,
     onVolumeChange: (Float) -> Unit,
     onThemeChange: (ThemePreference) -> Unit,
+    onNavigateToHistory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Overlay background when panel is open
@@ -117,6 +120,16 @@ fun HamburgerMenuPanel(
                     }
                 }
 
+                // Navigation section
+                NavigationSection(
+                    onNavigateToHistory = {
+                        onNavigateToHistory()
+                        onClose()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 // Audio settings section
                 AudioSettingsCard(
                     audioSettings = audioSettings,
@@ -136,6 +149,66 @@ fun HamburgerMenuPanel(
 
                 // App info section
                 AppInfoSection()
+            }
+        }
+    }
+}
+
+/**
+ * Navigation section for hamburger menu
+ */
+@Composable
+fun NavigationSection(
+    onNavigateToHistory: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Navigation",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            // Workout History button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToHistory() }
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.List,
+                    contentDescription = "Workout History",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+
+                Column {
+                    Text(
+                        text = "Workout History",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Text(
+                        text = "View your past workouts and progress",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
     }

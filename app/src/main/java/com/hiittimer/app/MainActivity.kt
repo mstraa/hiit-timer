@@ -20,6 +20,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hiittimer.app.data.PreferencesManager
 import com.hiittimer.app.ui.config.ConfigScreen
+import com.hiittimer.app.ui.history.WorkoutHistoryScreen
 import com.hiittimer.app.ui.theme.HIITTimerTheme
 import com.hiittimer.app.ui.timer.TimerScreen
 import com.hiittimer.app.ui.timer.TimerViewModel
@@ -57,6 +58,9 @@ fun HIITTimerApp() {
                     viewModel = timerViewModel,
                     onNavigateToConfig = {
                         navController.navigate("config")
+                    },
+                    onNavigateToHistory = {
+                        navController.navigate("history")
                     }
                 )
             }
@@ -64,6 +68,15 @@ fun HIITTimerApp() {
             composable("config") {
                 ConfigScreen(
                     viewModel = timerViewModel,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable("history") {
+                WorkoutHistoryScreen(
+                    workoutHistoryRepository = timerViewModel.getWorkoutHistoryRepository(),
                     onNavigateBack = {
                         navController.popBackStack()
                     }
