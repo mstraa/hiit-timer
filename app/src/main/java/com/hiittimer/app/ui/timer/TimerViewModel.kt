@@ -6,29 +6,47 @@ import androidx.lifecycle.viewModelScope
 import com.hiittimer.app.audio.AudioManager
 import com.hiittimer.app.audio.AudioSettings
 import com.hiittimer.app.data.*
+import com.hiittimer.app.service.TimerServiceConnection
 import com.hiittimer.app.timer.TimerManager
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel for the timer screen with audio management and workout history tracking
+ * ViewModel for the timer screen with background service integration and workout history tracking
  */
 class TimerViewModel(application: Application) : AndroidViewModel(application) {
     private val preferencesManager = PreferencesManager(application)
-    private val audioManager = AudioManager(application)
-    private val workoutHistoryRepository = InMemoryWorkoutHistoryRepository()
-    private val timerManager = TimerManager(audioManager, workoutHistoryRepository)
 
-    val timerStatus: StateFlow<TimerStatus> = timerManager.timerStatus
+    // Service connection for background timer operation
+    private val serviceConnection = TimerServiceConnection(application)
+
+    // Fallback for when service is not connected
+    private val fallbackAudioManager = AudioManager(application)
+    private val fallbackWorkoutHistoryRepository = InMemoryWorkoutHistoryRepository()
+    private val fallbackTimerManager = TimerManager(fallbackAudioManager, fallbackWorkoutHistoryRepository)
+
+    // Exposed state flows - use service when available, fallback otherwise
+    val timerStatus: StateFlow<TimerStatus> = serviceConnection.timerStatus
     val audioSettings: StateFlow<AudioSettings> = preferencesManager.audioSettings
     val themePreference: StateFlow<ThemePreference> = preferencesManager.themePreference
+    val isServiceConnected: StateFlow<Boolean> = serviceConnection.isServiceConnected
+
+    init {
+        // Bind to timer service for background operation
+        serviceConnection.bindService()
+    }
 
     /**
-     * Start the timer with current configuration
+     * Start the timer with current configuration (using background service)
      */
     fun startTimer() {
         val config = timerStatus.value.config
-        timerManager.start(config)
+        if (serviceConnection.isBound()) {
+            serviceConnection.startTimer(config)
+        } else {
+            // Fallback to direct timer manager if service not available
+            fallbackTimerManager.start(config)
+        }
     }
 
     /**
@@ -43,28 +61,45 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
             isUnlimited = config.isUnlimited,
             noRest = config.noRest
         )
-        timerManager.start(config, preset.id, preset.name, preset.exerciseName)
+        if (serviceConnection.isBound()) {
+            serviceConnection.startTimer(config, preset.id, preset.name, preset.exerciseName)
+        } else {
+            // Fallback to direct timer manager if service not available
+            fallbackTimerManager.start(config, preset.id, preset.name, preset.exerciseName)
+        }
     }
     
     /**
      * Pause the timer
      */
     fun pauseTimer() {
-        timerManager.pause()
+        if (serviceConnection.isBound()) {
+            serviceConnection.pauseTimer()
+        } else {
+            fallbackTimerManager.pause()
+        }
     }
-    
+
     /**
      * Resume the timer
      */
     fun resumeTimer() {
-        timerManager.resume()
+        if (serviceConnection.isBound()) {
+            serviceConnection.resumeTimer()
+        } else {
+            fallbackTimerManager.resume()
+        }
     }
-    
+
     /**
      * Reset the timer
      */
     fun resetTimer() {
-        timerManager.reset()
+        if (serviceConnection.isBound()) {
+            serviceConnection.resetTimer()
+        } else {
+            fallbackTimerManager.reset()
+        }
     }
     
     /**
@@ -85,7 +120,7 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
                 isUnlimited = isUnlimited,
                 noRest = noRest
             )
-            timerManager.updateConfig(newConfig)
+            fallbackTimerManager.updateConfig(newConfig)
         } catch (e: IllegalArgumentException) {
             // Handle validation errors - in a real app, you might want to emit an error state
             // For now, we'll just ignore invalid configurations
@@ -97,7 +132,10 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun toggleAudio() {
         preferencesManager.toggleAudioEnabled()
-        audioManager.updateSettings(preferencesManager.audioSettings.value)
+        // Update audio settings in service or fallback
+        val audioSettings = preferencesManager.audioSettings.value
+        serviceConnection.getAudioManager()?.updateSettings(audioSettings)
+            ?: fallbackAudioManager.updateSettings(audioSettings)
     }
 
     /**
@@ -105,7 +143,10 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setAudioVolume(volume: Float) {
         preferencesManager.setAudioVolume(volume)
-        audioManager.updateSettings(preferencesManager.audioSettings.value)
+        // Update audio settings in service or fallback
+        val audioSettings = preferencesManager.audioSettings.value
+        serviceConnection.getAudioManager()?.updateSettings(audioSettings)
+            ?: fallbackAudioManager.updateSettings(audioSettings)
     }
 
     /**
@@ -118,11 +159,14 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Get workout history repository for history screen (FR-011, FR-012)
      */
-    fun getWorkoutHistoryRepository(): WorkoutHistoryRepository = workoutHistoryRepository
+    fun getWorkoutHistoryRepository(): WorkoutHistoryRepository {
+        return serviceConnection.getWorkoutHistoryRepository() ?: fallbackWorkoutHistoryRepository
+    }
 
     override fun onCleared() {
         super.onCleared()
-        timerManager.cleanup()
-        audioManager.cleanup()
+        serviceConnection.cleanup()
+        fallbackTimerManager.cleanup()
+        fallbackAudioManager.cleanup()
     }
 }

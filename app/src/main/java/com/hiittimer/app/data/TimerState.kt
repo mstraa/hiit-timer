@@ -1,5 +1,7 @@
 package com.hiittimer.app.data
 
+import java.io.Serializable
+
 /**
  * Represents the current state of the timer
  */
@@ -27,7 +29,7 @@ data class TimerConfig(
     val totalRounds: Int = 5,
     val isUnlimited: Boolean = false,
     val noRest: Boolean = false // FR-001: "No Rest" toggle to disable rest periods
-) {
+) : Serializable {
     init {
         require(workTimeSeconds in 5..900) { "Work time must be between 5 and 900 seconds" }
         require(noRest || restTimeSeconds in 5..300) { "Rest time must be between 5 and 300 seconds when rest is enabled" }
