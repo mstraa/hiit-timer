@@ -32,6 +32,42 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 - Average session duration >15 minutes
 - Preset creation rate >40% of active users
 - Fullscreen mode engagement >85% of workout sessions for distraction-free experience
+- Successful automated builds >95% success rate
+- Audio output through media stream for proper volume control integration
+
+### 1.5 Acceptance Criteria for Phase 6 Features
+
+#### GitHub CI/CD Workflow (FR-022)
+- ✅ Automated build triggers on every push to main branch
+- ✅ Manual build trigger available for pull requests
+- ✅ APK artifacts generated and stored for 30 days
+- ✅ Build status visible in GitHub PR checks
+- ✅ Build failures reported with clear error messages
+- ✅ Gradle caching reduces build time by >50%
+
+#### Enhanced Fullscreen Experience (FR-023)
+- ✅ Status bar remains visible at all times
+- ✅ Unified background color between status bar area and content
+- ✅ No color transitions during fullscreen mode
+- ✅ Edge-to-edge content with proper insets handling
+- ✅ Consistent visual theme across all screen states
+- ✅ Works correctly on Android 7.0+ devices
+
+#### Refined Visual Feedback (FR-024)
+- ✅ No continuous background color changes during timer operation
+- ✅ Flash effect only at work interval start (green)
+- ✅ Flash effect only at rest interval start (red)
+- ✅ Clean, minimal visual feedback during countdown
+- ✅ Flash animations are smooth and performant
+- ✅ No visual distractions during active workout
+
+#### Media Audio Output (FR-025)
+- ✅ Audio cues play through media audio stream
+- ✅ Device media volume controls affect timer audio
+- ✅ Works correctly with Bluetooth headphones
+- ✅ Works correctly with wired headphones
+- ✅ Proper audio focus management
+- ✅ Audio ducking support for other media apps
 
 ---
 
@@ -240,6 +276,41 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 - Implement proper edge-to-edge content handling with appropriate padding for system gestures
 - Ensure compatibility across different Android versions and device form factors
 
+### 3.7 CI/CD & Development Workflow (Priority: Medium)
+**FR-022: GitHub CI/CD Workflow**
+- Automated build workflow triggered on pushes to main branch
+- Manual trigger capability for pull request builds
+- APK artifact generation and storage in GitHub Actions
+- Build status reporting and notifications
+- Automated testing execution in CI environment
+- Gradle build caching for faster build times
+- Build failure notifications and reporting
+
+### 3.8 Enhanced UI/UX Refinements (Priority: Medium)
+**FR-023: Enhanced Fullscreen Experience**
+- Unified background color between content and top bar areas
+- Persistent Android status bar visibility (no hiding)
+- Consistent visual theme across all fullscreen states
+- No color transitions or changes during fullscreen mode
+- Edge-to-edge content with proper status bar integration
+- Maintain system UI visibility for better user orientation
+
+**FR-024: Refined Visual Feedback**
+- Remove continuous light color changes during timer operation
+- Maintain only flash effects at interval transitions
+- Big flash animation at work interval start (green)
+- Big flash animation at rest interval start (red)
+- Clean, minimal visual feedback during countdown
+- No background color changes during active timing
+
+**FR-025: Media Audio Output**
+- Audio cues routed through media audio stream instead of notification stream
+- Integration with device media volume controls
+- Proper audio focus management for media playback
+- Compatibility with Bluetooth and wired headphones
+- Respect system media volume settings
+- Audio ducking support for other media applications
+
 ---
 
 ## 4. Technical Specifications
@@ -283,6 +354,40 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 - Edge-to-edge display support (API Level 29+)
 - System UI visibility control and gesture navigation handling
 - WindowInsetsController for modern fullscreen management (API Level 30+)
+
+### 4.6 CI/CD Requirements
+**TS-006: GitHub Actions Workflow**
+- YAML workflow configuration for automated builds
+- Gradle wrapper execution with proper caching
+- Android SDK setup and configuration
+- APK artifact upload and retention (30 days)
+- Build matrix for multiple API levels (optional)
+- Secrets management for signing keys (future)
+- Integration with GitHub status checks
+
+### 4.7 Audio System Enhancement
+**TS-007: Media Audio Stream Integration**
+- AudioManager.STREAM_MUSIC instead of STREAM_NOTIFICATION
+- AudioFocusRequest for proper media focus handling
+- MediaSession integration for media controls (optional)
+- Audio routing through media volume controls
+- Bluetooth audio device compatibility
+- Wired headphone support and detection
+
+### 4.8 UI System Refinements
+**TS-008: Enhanced Fullscreen Implementation**
+- Consistent background theming across all UI elements
+- Status bar visibility preservation
+- Edge-to-edge content with proper insets handling
+- No immersive mode or status bar hiding
+- Unified color scheme for top bar and content areas
+
+**TS-009: Visual Feedback Optimization**
+- Flash animation system for interval transitions
+- Removal of continuous color change animations
+- Optimized animation performance and battery usage
+- Clean visual state management
+- Minimal UI distractions during workout
 
 ---
 
@@ -504,33 +609,110 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 - **PRD Compliance**: All Section 6.4.1 requirements + FR-019, FR-020 & FR-021 completed
 - **Timeline**: All features completed within development session
 
-### 🔄 NEXT PRIORITY FEATURES:
-- **True Fullscreen Mode Implementation** (FR-004)
-- **Preset Management System** (FR-008)
-- **Workout History & Analytics** (FR-011, FR-012)
-- **Performance Optimization** (TS-003, TS-004)
+### ✅ COMPLETED PRIORITY FEATURES:
+- **True Fullscreen Mode Implementation** (FR-004) - ✅ COMPLETE
+- **Preset Management System** (FR-008) - ✅ COMPLETE
+- **Workout History & Analytics** (FR-011, FR-012) - ✅ COMPLETE
+- **Performance Optimization** (TS-003, TS-004) - ✅ COMPLETE
+- **Background Service & Notifications** (TS-005) - ✅ COMPLETE
+
+### 🔄 NEXT PRIORITY FEATURES (Phase 6):
+- **GitHub CI/CD Workflow** (FR-022, TS-006)
+- **Enhanced Fullscreen Experience** (FR-023, TS-008)
+- **Refined Visual Feedback** (FR-024, TS-009)
+- **Media Audio Output** (FR-025, TS-007)
+
+## 6.6 Phase 6 Implementation Plan (Weeks 11-12)
+
+### Task Group 1: GitHub CI/CD Workflow (FR-022, TS-006)
+**Priority: High | Estimated Time: 4-6 hours**
+
+#### Task 1.1: Create GitHub Actions Workflow (2 hours)
+- Create `.github/workflows/build.yml` file
+- Configure Android SDK setup and Gradle caching
+- Set up automated build on main branch pushes
+- Configure APK artifact upload and retention
+
+#### Task 1.2: Add Manual PR Build Trigger (1 hour)
+- Add `workflow_dispatch` trigger for manual builds
+- Configure PR build trigger with proper permissions
+- Add build status reporting to PR checks
+
+#### Task 1.3: Testing and Optimization (1-2 hours)
+- Test workflow with sample commits
+- Optimize build times with caching strategies
+- Add build failure notifications
+
+### Task Group 2: Enhanced Fullscreen Experience (FR-023, TS-008)
+**Priority: High | Estimated Time: 3-4 hours**
+
+#### Task 2.1: Unified Background Implementation (2 hours)
+- Remove color transitions between top bar and content
+- Implement consistent background theming
+- Ensure status bar remains visible at all times
+- Update FullscreenManager to preserve status bar
+
+#### Task 2.2: Edge-to-Edge Content Refinement (1-2 hours)
+- Proper insets handling for status bar area
+- Consistent padding and margins
+- Test across different Android versions and devices
+
+### Task Group 3: Refined Visual Feedback (FR-024, TS-009)
+**Priority: Medium | Estimated Time: 2-3 hours**
+
+#### Task 3.1: Remove Continuous Color Changes (1 hour)
+- Remove background color animations during timer operation
+- Keep only flash effects at interval transitions
+- Clean up visual state management code
+
+#### Task 3.2: Enhanced Flash Effects (1-2 hours)
+- Implement big flash animation for work interval start
+- Implement big flash animation for rest interval start
+- Optimize animation performance and battery usage
+
+### Task Group 4: Media Audio Output (FR-025, TS-007)
+**Priority: Medium | Estimated Time: 2-3 hours**
+
+#### Task 4.1: Audio Stream Migration (1-2 hours)
+- Change from STREAM_NOTIFICATION to STREAM_MUSIC
+- Update AudioManager implementation
+- Test with device media volume controls
+
+#### Task 4.2: Audio Focus Management (1 hour)
+- Implement proper AudioFocusRequest handling
+- Add support for audio ducking
+- Test with Bluetooth and wired headphones
 
 ---
 
 ## 7. Wireframe Descriptions
 
-### 7.1 Main Timer Screen (True Fullscreen Mode)
+### 7.1 Main Timer Screen (Enhanced Fullscreen Mode)
 ```
-┌─────────────────────────────────────┐ ← No system status bar (hidden)
+┌─────────────────────────────────────┐ ← Status bar visible (unified background)
+│ 🔋 📶 🕐 12:34                      │ ← Android status bar (always visible)
+├─────────────────────────────────────┤ ← Unified background color
 │ [☰] HIIT Timer           [⚙]        │ ← Navigation (edge-to-edge)
 │                                     │
 │                                     │
 │           WORK                      │ ← Interval Type
 │                                     │
-│         00:15.234                   │ ← Large Timer with ms
-│                                     │ ← (Expanded vertical space)
+│         00:15.2                     │ ← Large Timer (no continuous color change)
+│                                     │ ← Clean, minimal visual feedback
 │        Round 3 of 5                 │ ← Progress
 │                                     │
 │                                     │
-│    [    START    ] [Reset]          │ ← Controls: 80%/20%
+│    [    START    ] [↻]              │ ← Controls: 80%/20% (icon reset)
 │                                     │ ← Gesture navigation area
 └─────────────────────────────────────┘ ← Edge-to-edge bottom
 ```
+
+**Visual Feedback Notes:**
+- No continuous background color changes during timer operation
+- Big flash effect only at work interval start (green flash)
+- Big flash effect only at rest interval start (red flash)
+- Unified background color between status bar area and content
+- Status bar always visible for better user orientation
 
 ### 7.2 Timer Configuration Modal
 ```
@@ -626,6 +808,12 @@ Create a minimalist, highly functional HIIT (High-Intensity Interval Training) a
 - Accessibility improvements
 - Comprehensive testing
 - Bug fixes and refinements
+
+### Phase 6: CI/CD & UI Refinements (Weeks 11-12)
+- GitHub CI/CD workflow implementation
+- Fullscreen UI improvements
+- Audio output optimization
+- Visual feedback refinements
 
 ---
 
