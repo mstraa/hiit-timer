@@ -45,13 +45,16 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Start the timer with current configuration
      */
     fun startTimer() {
-        val config = timerStatus.value.config
-        // Always use fallback timer manager for reliable operation
-        fallbackTimerManager.start(config)
+        // Only start if currently idle
+        if (timerStatus.value.canStart) {
+            val config = timerStatus.value.config
+            // Always use fallback timer manager for reliable operation
+            fallbackTimerManager.start(config)
 
-        // Also start service for background operation if available
-        if (serviceConnection.isBound()) {
-            serviceConnection.startTimer(config)
+            // Also start service for background operation if available
+            if (serviceConnection.isBound()) {
+                serviceConnection.startTimer(config)
+            }
         }
     }
 
@@ -80,9 +83,12 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Pause the timer
      */
     fun pauseTimer() {
-        fallbackTimerManager.pause()
-        if (serviceConnection.isBound()) {
-            serviceConnection.pauseTimer()
+        // Only pause if currently running
+        if (timerStatus.value.canPause) {
+            fallbackTimerManager.pause()
+            if (serviceConnection.isBound()) {
+                serviceConnection.pauseTimer()
+            }
         }
     }
 
@@ -90,9 +96,12 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Resume the timer
      */
     fun resumeTimer() {
-        fallbackTimerManager.resume()
-        if (serviceConnection.isBound()) {
-            serviceConnection.resumeTimer()
+        // Only resume if currently paused
+        if (timerStatus.value.canResume) {
+            fallbackTimerManager.resume()
+            if (serviceConnection.isBound()) {
+                serviceConnection.resumeTimer()
+            }
         }
     }
 
@@ -100,10 +109,14 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Reset the timer
      */
     fun resetTimer() {
+        // Ensure both fallback and service are reset to maintain synchronization
         fallbackTimerManager.reset()
         if (serviceConnection.isBound()) {
             serviceConnection.resetTimer()
         }
+        // Force state synchronization after reset
+        val currentConfig = timerStatus.value.config
+        fallbackTimerManager.updateConfig(currentConfig)
     }
     
     /**

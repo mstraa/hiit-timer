@@ -46,7 +46,7 @@ class TimerScreenUITest {
         assertFalse(runningStatus.canStart)
         assertTrue(runningStatus.canPause)
         assertFalse(runningStatus.canResume)
-        assertTrue(runningStatus.canReset)
+        assertFalse(runningStatus.canReset) // Reset disabled when running
     }
 
     @Test
