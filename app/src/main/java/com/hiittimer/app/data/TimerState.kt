@@ -56,7 +56,7 @@ data class TimerStatus(
     val canStart: Boolean get() = state == TimerState.IDLE
     val canPause: Boolean get() = state == TimerState.RUNNING
     val canResume: Boolean get() = state == TimerState.PAUSED
-    val canReset: Boolean get() = state == TimerState.PAUSED || state == TimerState.FINISHED
+    val canReset: Boolean get() = state == TimerState.IDLE || state == TimerState.PAUSED || state == TimerState.FINISHED
     
     /**
      * Format time remaining with conditional formatting (FR-019: Timer Display Format Enhancement)

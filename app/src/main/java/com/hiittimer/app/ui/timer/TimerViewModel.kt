@@ -10,6 +10,9 @@ import com.hiittimer.app.performance.PerformanceManager
 import com.hiittimer.app.service.TimerServiceConnection
 import com.hiittimer.app.timer.TimerManager
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 
 /**
@@ -27,8 +30,19 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     private val fallbackPerformanceManager = PerformanceManager(application)
     private val fallbackTimerManager = TimerManager(fallbackAudioManager, fallbackWorkoutHistoryRepository, fallbackPerformanceManager)
 
-    // Exposed state flows - use fallback timer manager for reliable state
-    val timerStatus: StateFlow<TimerStatus> = fallbackTimerManager.timerStatus
+    // Exposed state flows - combine service and fallback timer status
+    val timerStatus: StateFlow<TimerStatus> = combine(
+        serviceConnection.timerStatus,
+        fallbackTimerManager.timerStatus,
+        serviceConnection.isServiceConnected
+    ) { serviceStatus, fallbackStatus, isConnected ->
+        // Use service status when connected, fallback otherwise
+        if (isConnected) serviceStatus else fallbackStatus
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = fallbackTimerManager.timerStatus.value
+    )
     val audioSettings: StateFlow<AudioSettings> = preferencesManager.audioSettings
     val themePreference: StateFlow<ThemePreference> = preferencesManager.themePreference
     val isServiceConnected: StateFlow<Boolean> = serviceConnection.isServiceConnected

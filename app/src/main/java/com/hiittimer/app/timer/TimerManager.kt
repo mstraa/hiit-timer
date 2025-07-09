@@ -124,7 +124,11 @@ class TimerManager(
      */
     fun updateConfig(config: TimerConfig) {
         if (_timerStatus.value.state == TimerState.IDLE) {
-            _timerStatus.value = _timerStatus.value.copy(config = config)
+            _timerStatus.value = _timerStatus.value.copy(
+                config = config,
+                timeRemainingSeconds = config.workTimeSeconds,
+                timeRemainingMilliseconds = 0
+            )
         }
     }
     

@@ -35,7 +35,7 @@ class TimerManagerTest {
         assertTrue(status.canStart)
         assertFalse(status.canPause)
         assertFalse(status.canResume)
-        assertFalse(status.canReset)
+        assertTrue(status.canReset)
     }
 
     @Test
