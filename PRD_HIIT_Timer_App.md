@@ -938,4 +938,237 @@ For each completed task, document:
 
 ---
 
+## 12. Critical Bug Fixes & Maintenance Requirements
+
+### 12.1 Overview
+This section documents critical bugs identified in the HIIT Timer app that require immediate attention to ensure proper functionality and user experience. These bugs impact core timer functionality and user interface behavior.
+
+### 12.2 Critical Bug Inventory
+
+#### **Bug 1: Resume Button Not Displaying**
+**Priority**: Critical | **Effort**: 2-3 hours | **Phase**: Immediate
+
+**Current Behavior**:
+- After clicking "Start" then "Pause", the button still shows "Start" or "Pause" instead of "Resume"
+- Users cannot properly identify the correct action to continue their workout
+- Button text logic is not properly reflecting timer state
+
+**Expected Behavior**:
+- When timer is paused, the primary button should display "Resume"
+- Button text should accurately reflect the available action
+- Clear visual indication of pause/resume state
+
+**Root Cause Analysis**:
+- Timer state management logic may not be properly updating button text
+- UI state flow not correctly reflecting pause state
+- Potential race condition between timer state and UI updates
+
+**Technical Implementation Requirements**:
+```kotlin
+// FR-040: Resume Button Display Logic
+- Update TimerScreen button text logic to properly handle PAUSED state
+- Ensure TimerStatus.canResume property correctly drives UI state
+- Implement proper state synchronization between timer and UI
+- Add state validation in button click handlers
+```
+
+**Acceptance Criteria**:
+- ✅ Button shows "Start" when timer is IDLE
+- ✅ Button shows "Pause" when timer is RUNNING
+- ✅ Button shows "Resume" when timer is PAUSED
+- ✅ Button text updates immediately upon state change
+- ✅ Resume functionality works correctly from paused state
+
+**Dependencies**: Timer state management system, UI state flow
+**Risks**: Potential impact on existing timer functionality
+
+---
+
+#### **Bug 2: Timer Configuration Not Updating Display**
+**Priority**: Critical | **Effort**: 3-4 hours | **Phase**: Immediate
+
+**Current Behavior**:
+- When users modify timer settings (work time, rest time, rounds), the main timer display doesn't reflect the new configuration
+- Timer display shows stale values from previous configuration
+- Users cannot verify their settings are applied correctly
+
+**Expected Behavior**:
+- Timer display should immediately show the updated work time when configuration changes
+- All timer-related UI elements should reflect current configuration
+- Real-time updates as user modifies settings
+
+**Root Cause Analysis**:
+- Configuration updates not properly propagating to timer display
+- Timer state not being reset/updated when configuration changes
+- Potential caching of old configuration values in UI state
+
+**Technical Implementation Requirements**:
+```kotlin
+// FR-041: Configuration Display Synchronization
+- Implement immediate timer display updates when configuration changes
+- Ensure TimerStatus reflects current configuration at all times
+- Add configuration change listeners in TimerViewModel
+- Update timer display formatting to show current config values
+```
+
+**Acceptance Criteria**:
+- ✅ Timer display shows current work time when configuration is modified
+- ✅ Display updates immediately without requiring app restart
+- ✅ All timer UI elements reflect current configuration
+- ✅ Configuration changes are persisted and displayed correctly
+- ✅ No stale values shown in timer display
+
+**Dependencies**: Configuration management system, timer state management
+**Risks**: Potential performance impact from frequent UI updates
+
+---
+
+#### **Bug 3: Default Timer Display Shows 00:00.0**
+**Priority**: High | **Effort**: 1-2 hours | **Phase**: Immediate
+
+**Current Behavior**:
+- On app startup, the timer displays "00:00.0" instead of the default work time
+- Confusing initial state that doesn't match the default configuration
+- Users see zero time instead of expected default values
+
+**Expected Behavior**:
+- Should display "20" (for 20 seconds default work time) or "00:20.0" format
+- Initial display should match default timer configuration
+- Consistent time formatting across all states
+
+**Root Cause Analysis**:
+- Timer initialization not setting proper default display values
+- Default TimerStatus not reflecting default configuration
+- Time formatting logic not handling initial state correctly
+
+**Technical Implementation Requirements**:
+```kotlin
+// FR-042: Default Timer Display Initialization
+- Initialize TimerStatus with default configuration values
+- Ensure timer display shows default work time on startup
+- Implement proper time formatting for initial state
+- Add validation for default configuration loading
+```
+
+**Acceptance Criteria**:
+- ✅ Timer displays default work time (20 seconds) on app startup
+- ✅ Display format is consistent with running timer format
+- ✅ Default configuration is properly loaded and displayed
+- ✅ No "00:00.0" shown unless timer has actually completed
+- ✅ Time formatting is consistent across all timer states
+
+**Dependencies**: Default configuration system, timer initialization
+**Risks**: Low risk, isolated to display logic
+
+---
+
+#### **Bug 4: Preset Tab Not Visible**
+**Priority**: Critical | **Effort**: 4-5 hours | **Phase**: Immediate
+
+**Current Behavior**:
+- Users only see the configuration tab, preset functionality is not accessible
+- Key feature is completely inaccessible to users
+- Tab navigation may not be properly implemented
+
+**Expected Behavior**:
+- Users should be able to access and use preset workouts
+- Clear tab navigation between configuration and presets
+- Full preset functionality available and working
+
+**Root Cause Analysis**:
+- Tab navigation implementation may be incomplete
+- Preset UI components may not be properly integrated
+- Navigation state management issues in main timer screen
+
+**Technical Implementation Requirements**:
+```kotlin
+// FR-043: Preset Tab Accessibility
+- Implement proper tab navigation in TimerScreen
+- Ensure preset UI components are properly rendered
+- Add tab state management and navigation logic
+- Integrate preset functionality with timer system
+```
+
+**Acceptance Criteria**:
+- ✅ Preset tab is visible and accessible to users
+- ✅ Tab navigation works smoothly between configuration and presets
+- ✅ Preset functionality is fully operational
+- ✅ Users can select and use preset workouts
+- ✅ Tab state is properly maintained during app usage
+
+**Dependencies**: Preset management system, tab navigation UI
+**Risks**: May require significant UI restructuring
+
+---
+
+### 12.3 Implementation Strategy
+
+#### **Phase 1: Critical UI Fixes (Week 1)**
+1. **Bug 1**: Resume Button Display Logic
+2. **Bug 3**: Default Timer Display Initialization
+
+#### **Phase 2: Configuration & Navigation (Week 2)**
+1. **Bug 2**: Configuration Display Synchronization
+2. **Bug 4**: Preset Tab Accessibility
+
+#### **Phase 3: Testing & Validation (Week 3)**
+1. Comprehensive testing of all bug fixes
+2. Regression testing to ensure no new issues
+3. User acceptance testing for fixed functionality
+
+### 12.4 Quality Assurance Requirements
+
+#### **Testing Strategy**:
+- **Unit Tests**: Each bug fix must include comprehensive unit tests
+- **Integration Tests**: Test interaction between fixed components
+- **UI Tests**: Automated testing of button states and display updates
+- **Manual Testing**: User workflow testing for each fixed scenario
+
+#### **Performance Requirements**:
+- Bug fixes must not impact timer accuracy (±50ms requirement)
+- UI updates must be smooth and responsive (<16ms frame time)
+- Configuration changes must apply within 100ms
+- No memory leaks or performance regressions
+
+#### **Compatibility Requirements**:
+- Fixes must work across all supported Android versions (API 24+)
+- Maintain compatibility with existing user data and preferences
+- Ensure fixes work in both light and dark themes
+- Support all screen sizes and orientations
+
+### 12.5 Risk Mitigation
+
+#### **Technical Risks**:
+- **State Management Complexity**: Implement comprehensive state validation
+- **UI Synchronization Issues**: Add proper state flow management
+- **Performance Impact**: Profile and optimize all changes
+- **Regression Risks**: Maintain comprehensive test coverage
+
+#### **User Experience Risks**:
+- **Workflow Disruption**: Ensure fixes don't change expected user flows
+- **Data Loss**: Implement proper state preservation during fixes
+- **Accessibility Impact**: Maintain accessibility features during UI changes
+
+### 12.6 Success Metrics
+
+#### **Functional Metrics**:
+- ✅ 100% of identified bugs resolved and tested
+- ✅ Zero regression issues introduced
+- ✅ All acceptance criteria met for each bug
+- ✅ Comprehensive test coverage (>95%) for fixed components
+
+#### **User Experience Metrics**:
+- ✅ Improved user satisfaction scores for timer functionality
+- ✅ Reduced support requests related to timer confusion
+- ✅ Increased preset feature usage after tab fix
+- ✅ Positive user feedback on button clarity and timer display
+
+#### **Technical Metrics**:
+- ✅ Maintained timer accuracy requirements (±50ms)
+- ✅ No performance degradation in UI responsiveness
+- ✅ Clean code quality metrics maintained
+- ✅ Zero critical or high-severity issues remaining
+
+---
+
 *End of Document*

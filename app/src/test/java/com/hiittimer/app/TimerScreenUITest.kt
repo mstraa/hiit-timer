@@ -22,7 +22,7 @@ class TimerScreenUITest {
         assertTrue(idleStatus.canStart)
         assertFalse(idleStatus.canPause)
         assertFalse(idleStatus.canResume)
-        assertTrue(idleStatus.canReset)
+        assertFalse(idleStatus.canReset) // Section 12 requirement
     }
 
     @Test

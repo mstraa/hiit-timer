@@ -48,6 +48,23 @@ data class TimerStatus(
     val currentRound: Int = 1,
     val config: TimerConfig = TimerConfig()
 ) {
+    companion object {
+        /**
+         * Create a default TimerStatus with proper initial display values (FR-042)
+         * Shows the default work time instead of 00:00.0
+         */
+        fun createDefault(): TimerStatus {
+            val defaultConfig = TimerConfig()
+            return TimerStatus(
+                state = TimerState.IDLE,
+                currentInterval = IntervalType.WORK,
+                timeRemainingSeconds = defaultConfig.workTimeSeconds,
+                timeRemainingMilliseconds = 0,
+                currentRound = 1,
+                config = defaultConfig
+            )
+        }
+    }
     val isWorkInterval: Boolean get() = currentInterval == IntervalType.WORK
     val isRestInterval: Boolean get() = currentInterval == IntervalType.REST
     val isRunning: Boolean get() = state == TimerState.RUNNING
@@ -56,7 +73,7 @@ data class TimerStatus(
     val canStart: Boolean get() = state == TimerState.IDLE
     val canPause: Boolean get() = state == TimerState.RUNNING
     val canResume: Boolean get() = state == TimerState.PAUSED
-    val canReset: Boolean get() = state == TimerState.IDLE || state == TimerState.PAUSED || state == TimerState.FINISHED
+    val canReset: Boolean get() = state == TimerState.PAUSED || state == TimerState.FINISHED
     
     /**
      * Format time remaining with conditional formatting (FR-019: Timer Display Format Enhancement)

@@ -1,19 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
+   HIIT Timer App - Data extraction rules for Android 12+ backup and restore
    See https://developer.android.com/about/versions/12/backup-restore#xml-changes
    for details.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Include user data that should be backed up -->
+        <include domain="database" path="hiit_timer.db"/>
+        <include domain="sharedpref" path="user_preferences.xml"/>
+        <include domain="sharedpref" path="audio_settings.xml"/>
+
+        <!-- Exclude temporary and cache data -->
+        <exclude domain="cache"/>
+        <exclude domain="no_backup"/>
+        <exclude domain="sharedpref" path="temp_*.xml"/>
     </cloud-backup>
-    <!--
+
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <!-- Include essential data for device transfer -->
+        <include domain="database" path="hiit_timer.db"/>
+        <include domain="sharedpref" path="user_preferences.xml"/>
+        <include domain="sharedpref" path="audio_settings.xml"/>
+
+        <!-- Exclude device-specific data -->
+        <exclude domain="cache"/>
+        <exclude domain="external"/>
     </device-transfer>
-    -->
 </data-extraction-rules>

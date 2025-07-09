@@ -62,8 +62,8 @@ class UIBugFixTest {
             config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 10, totalRounds = 5)
         )
 
-        // Verify reset button should be available when idle (per user requirements)
-        assertTrue("Reset button should be available when timer is idle", idleStatus.canReset)
+        // Verify reset button should NOT be available when idle (per Section 12 requirements)
+        assertFalse("Reset button should NOT be available when timer is idle", idleStatus.canReset)
         assertTrue("Start button should be available when idle", idleStatus.canStart)
         assertFalse("Pause button should not be available when idle", idleStatus.canPause)
         assertFalse("Resume button should not be available when idle", idleStatus.canResume)
@@ -197,10 +197,10 @@ class UIBugFixTest {
         val pausedStatus = runningStatus.copy(state = TimerState.PAUSED)
         assertTrue("Can resume from PAUSED", pausedStatus.canResume)
         
-        // Reset available from IDLE, PAUSED or FINISHED (per user requirements)
+        // Reset only available from PAUSED or FINISHED (per Section 12 requirements)
         assertFalse("Cannot reset from RUNNING", runningStatus.canReset)
         assertTrue("Can reset from PAUSED", pausedStatus.canReset)
-        assertTrue("Can reset from IDLE", idleStatus.canReset)
+        assertFalse("Cannot reset from IDLE", idleStatus.canReset) // Section 12 requirement
     }
 
     @Test

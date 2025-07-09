@@ -26,7 +26,7 @@ class TimerStateSynchronizationTest {
         assertTrue("IDLE: canStart should be true", idleStatus.canStart)
         assertFalse("IDLE: canPause should be false", idleStatus.canPause)
         assertFalse("IDLE: canResume should be false", idleStatus.canResume)
-        assertTrue("IDLE: canReset should be true", idleStatus.canReset)
+        assertFalse("IDLE: canReset should be false", idleStatus.canReset) // Reset disabled when IDLE per Section 12
         
         // Test RUNNING state properties
         val runningStatus = TimerStatus(
@@ -118,9 +118,9 @@ class TimerStateSynchronizationTest {
     fun `verify reset button behavior matches requirements`() {
         val config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 10, totalRounds = 5)
         
-        // IDLE state - reset should be enabled
+        // IDLE state - reset should be disabled (per Section 12 requirements)
         val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
-        assertTrue("Reset should be enabled when IDLE", idleStatus.canReset)
+        assertFalse("Reset should be disabled when IDLE", idleStatus.canReset)
         
         // RUNNING state - reset should be disabled
         val runningStatus = TimerStatus(

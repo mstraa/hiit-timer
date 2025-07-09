@@ -2,6 +2,8 @@ package com.hiittimer.app.timer
 
 import com.hiittimer.app.audio.AudioManager
 import com.hiittimer.app.data.*
+import com.hiittimer.app.error.ErrorHandler
+import com.hiittimer.app.utils.Logger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,11 +20,16 @@ class TimerManager(
     private val workoutHistoryRepository: WorkoutHistoryRepository? = null,
     private val performanceManager: PerformanceManager? = null
 ) {
-    private val _timerStatus = MutableStateFlow(TimerStatus())
+    // FR-042: Initialize with proper default display values
+    private val _timerStatus = MutableStateFlow(TimerStatus.createDefault())
     val timerStatus: StateFlow<TimerStatus> = _timerStatus.asStateFlow()
 
     private var timerJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val scope = CoroutineScope(
+        Dispatchers.Main +
+        SupervisorJob() +
+        CoroutineName("TimerManager")
+    )
 
     // Session tracking variables (FR-010: Workout Session Tracking)
     private var sessionStartTime: Long = 0
@@ -39,7 +46,21 @@ class TimerManager(
      */
     fun start(config: TimerConfig, presetId: String? = null, presetName: String = "Custom Workout", exerciseName: String? = null) {
         try {
-            if (_timerStatus.value.state != TimerState.IDLE) return
+            // Validate state
+            if (_timerStatus.value.state != TimerState.IDLE) {
+                Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION,
+                    "Attempted to start timer in non-idle state: ${_timerStatus.value.state}")
+                throw ErrorHandler.TimerException.TimerStateInvalid("Timer is not in idle state")
+            }
+
+            // Validate configuration
+            if (config.workTimeSeconds <= 0) {
+                Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION,
+                    "Invalid work time configuration: ${config.workTimeSeconds}")
+                throw ErrorHandler.TimerException.TimerConfigurationError("Work time must be greater than 0")
+            }
+
+            Logger.Timer.start("workTime=${config.workTimeSeconds}s, restTime=${config.restTimeSeconds}s, rounds=${config.totalRounds}")
 
             // Initialize session tracking (FR-010: Workout Session Tracking)
             sessionStartTime = System.currentTimeMillis()
@@ -62,14 +83,21 @@ class TimerManager(
             // Play work interval start sound (FR-006: Audio cues)
             try {
                 audioManager?.playWorkIntervalSound()
+                Logger.Audio.playSound("work_interval_start")
             } catch (e: Exception) {
+                Logger.Audio.error("Failed to play work interval start sound", e)
                 // Continue without audio if there's an audio issue
             }
 
             startCountdown()
-        } catch (e: Exception) {
-            // Reset to idle state if start fails
+        } catch (e: ErrorHandler.TimerException) {
+            Logger.Timer.error("Timer start failed: ${e.message}", e)
             _timerStatus.value = TimerStatus()
+            throw e
+        } catch (e: Exception) {
+            Logger.Timer.error("Unexpected error during timer start", e)
+            _timerStatus.value = TimerStatus()
+            throw ErrorHandler.TimerException.TimerStartFailure("Failed to start timer", e)
         }
     }
     

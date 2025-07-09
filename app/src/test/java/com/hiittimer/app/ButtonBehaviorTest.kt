@@ -23,11 +23,11 @@ class ButtonBehaviorTest {
             config = config
         )
         
-        // When timer is STOPPED: Show "Start" button and enable reset button
+        // When timer is STOPPED: Show "Start" button, reset disabled per Section 12
         assertTrue("Start button should be available when stopped", stoppedStatus.canStart)
         assertFalse("Pause button should not be available when stopped", stoppedStatus.canPause)
         assertFalse("Resume button should not be available when stopped", stoppedStatus.canResume)
-        assertTrue("Reset button should be enabled when stopped", stoppedStatus.canReset)
+        assertFalse("Reset button should be disabled when stopped", stoppedStatus.canReset) // Section 12 requirement
         
         // Test RUNNING state
         val runningStatus = TimerStatus(
@@ -112,6 +112,6 @@ class ButtonBehaviorTest {
         assertTrue("Should be able to start after reset", afterResetStatus.canStart)
         assertFalse("Should not be able to pause after reset", afterResetStatus.canPause)
         assertFalse("Should not be able to resume after reset", afterResetStatus.canResume)
-        assertTrue("Reset button should be enabled after reset", afterResetStatus.canReset)
+        assertFalse("Reset button should be disabled after reset", afterResetStatus.canReset) // Section 12 requirement
     }
 }

@@ -48,7 +48,7 @@ class TimerControlBugTest {
         assertEquals(TimerState.IDLE, resetStatus.state)
         assertEquals(config.workTimeSeconds, resetStatus.timeRemainingSeconds)
         assertEquals(config, resetStatus.config)
-        assertTrue("Reset button should be enabled after reset", resetStatus.canReset)
+        assertFalse("Reset button should be disabled after reset", resetStatus.canReset) // Section 12 requirement
         assertTrue("Start button should be enabled after reset", resetStatus.canStart)
     }
 
@@ -134,9 +134,9 @@ class TimerControlBugTest {
         // Test reset button availability requirements
         val config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 10, totalRounds = 5)
         
-        // IDLE state - reset should be enabled (per user requirements)
+        // IDLE state - reset should be disabled (per Section 12 requirements)
         val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
-        assertTrue("Reset should be enabled when idle", idleStatus.canReset)
+        assertFalse("Reset should be disabled when idle", idleStatus.canReset)
         
         // RUNNING state - reset should be disabled (per requirements)
         val runningStatus = TimerStatus(
@@ -168,7 +168,7 @@ class TimerControlBugTest {
         assertTrue("Start should be available when idle", idleStatus.canStart)
         assertFalse("Pause should not be available when idle", idleStatus.canPause)
         assertFalse("Resume should not be available when idle", idleStatus.canResume)
-        assertTrue("Reset should be available when idle", idleStatus.canReset)
+        assertFalse("Reset should NOT be available when idle", idleStatus.canReset) // Section 12 requirement
         
         // RUNNING: Start=false, Pause=true, Resume=false, Reset=false
         val runningStatus = TimerStatus(

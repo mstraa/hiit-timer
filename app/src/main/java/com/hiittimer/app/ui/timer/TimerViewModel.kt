@@ -41,7 +41,7 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
-        initialValue = fallbackTimerManager.timerStatus.value
+        initialValue = TimerStatus.createDefault() // FR-042: Proper initial display
     )
     val audioSettings: StateFlow<AudioSettings> = preferencesManager.audioSettings
     val themePreference: StateFlow<ThemePreference> = preferencesManager.themePreference

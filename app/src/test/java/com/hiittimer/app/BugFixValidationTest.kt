@@ -9,9 +9,112 @@ import org.junit.Test
 import org.junit.Assert.*
 
 /**
- * Unit tests to validate bug fixes for audio cue settings and timer configuration persistence
+ * Unit tests to validate the critical bug fixes from Section 12 of the PRD
+ * Tests Bug 1 (Resume Button Display) and Bug 3 (Default Timer Display)
+ * Also includes previous audio and configuration bug fix tests
  */
 class BugFixValidationTest {
+
+    // ========================================
+    // SECTION 12 BUG FIXES (Phase 1)
+    // ========================================
+
+    @Test
+    fun `bug 1 fix - resume button state logic works correctly`() {
+        // FR-040: Resume Button Display Logic
+
+        // Test IDLE state - should show Start
+        val idleStatus = TimerStatus.createDefault()
+        assertTrue("Should be able to start when IDLE", idleStatus.canStart)
+        assertFalse("Should not be able to pause when IDLE", idleStatus.canPause)
+        assertFalse("Should not be able to resume when IDLE", idleStatus.canResume)
+        assertFalse("Should not be able to reset when IDLE", idleStatus.canReset)
+
+        // Test RUNNING state - should show Pause
+        val runningStatus = idleStatus.copy(state = TimerState.RUNNING)
+        assertFalse("Should not be able to start when RUNNING", runningStatus.canStart)
+        assertTrue("Should be able to pause when RUNNING", runningStatus.canPause)
+        assertFalse("Should not be able to resume when RUNNING", runningStatus.canResume)
+        assertFalse("Should not be able to reset when RUNNING", runningStatus.canReset)
+
+        // Test PAUSED state - should show Resume
+        val pausedStatus = runningStatus.copy(state = TimerState.PAUSED)
+        assertFalse("Should not be able to start when PAUSED", pausedStatus.canStart)
+        assertFalse("Should not be able to pause when PAUSED", pausedStatus.canPause)
+        assertTrue("Should be able to resume when PAUSED", pausedStatus.canResume)
+        assertTrue("Should be able to reset when PAUSED", pausedStatus.canReset)
+
+        // Test FINISHED state - should show Start (new workout)
+        val finishedStatus = idleStatus.copy(state = TimerState.FINISHED)
+        assertFalse("Should not be able to start when FINISHED", finishedStatus.canStart)
+        assertFalse("Should not be able to pause when FINISHED", finishedStatus.canPause)
+        assertFalse("Should not be able to resume when FINISHED", finishedStatus.canResume)
+        assertTrue("Should be able to reset when FINISHED", finishedStatus.canReset)
+    }
+
+    @Test
+    fun `bug 1 fix - button text logic matches timer state`() {
+        // FR-040: Simulate the button text logic from TimerScreen.kt
+
+        fun getExpectedButtonText(timerStatus: TimerStatus): String {
+            return when {
+                timerStatus.canStart -> "Start"
+                timerStatus.canPause -> "Pause"
+                timerStatus.canResume -> "Resume"
+                else -> "Start"
+            }
+        }
+
+        // Test all states
+        val idleStatus = TimerStatus.createDefault()
+        assertEquals("IDLE should show Start", "Start", getExpectedButtonText(idleStatus))
+
+        val runningStatus = idleStatus.copy(state = TimerState.RUNNING)
+        assertEquals("RUNNING should show Pause", "Pause", getExpectedButtonText(runningStatus))
+
+        val pausedStatus = runningStatus.copy(state = TimerState.PAUSED)
+        assertEquals("PAUSED should show Resume", "Resume", getExpectedButtonText(pausedStatus))
+
+        val finishedStatus = idleStatus.copy(state = TimerState.FINISHED)
+        assertEquals("FINISHED should show Start", "Start", getExpectedButtonText(finishedStatus))
+    }
+
+    @Test
+    fun `bug 3 fix - default timer status shows correct initial display`() {
+        // FR-042: Default Timer Display Initialization
+
+        val defaultStatus = TimerStatus.createDefault()
+
+        // Should show default work time (20 seconds) instead of 00:00.0
+        assertEquals("Should show default work time", 20, defaultStatus.timeRemainingSeconds)
+        assertEquals("Should start with 0 milliseconds", 0, defaultStatus.timeRemainingMilliseconds)
+        assertEquals("Should be in IDLE state", TimerState.IDLE, defaultStatus.state)
+        assertEquals("Should be in WORK interval", IntervalType.WORK, defaultStatus.currentInterval)
+        assertEquals("Should start at round 1", 1, defaultStatus.currentRound)
+
+        // Verify the configuration is correct
+        val config = defaultStatus.config
+        assertEquals("Default work time should be 20 seconds", 20, config.workTimeSeconds)
+        assertEquals("Default rest time should be 10 seconds", 10, config.restTimeSeconds)
+        assertEquals("Default rounds should be 5", 5, config.totalRounds)
+        assertFalse("Should not be unlimited by default", config.isUnlimited)
+        assertFalse("Should have rest by default", config.noRest)
+    }
+
+    @Test
+    fun `bug 3 fix - default display formatting shows correct time`() {
+        // FR-042: Verify time formatting shows "20.0" instead of "00:00.0"
+
+        val defaultStatus = TimerStatus.createDefault()
+        val formattedTime = defaultStatus.formatTimeRemaining()
+
+        // Should show "20.0" for 20 seconds, 0 milliseconds
+        assertEquals("Should format as 20.0", "20.0", formattedTime)
+    }
+
+    // ========================================
+    // PREVIOUS BUG FIXES (Audio & Config)
+    // ========================================
 
     @Test
     fun `bug fix 1 - audio settings initialization with disabled state`() {

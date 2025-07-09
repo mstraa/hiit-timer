@@ -35,7 +35,7 @@ class TimerManagerTest {
         assertTrue(status.canStart)
         assertFalse(status.canPause)
         assertFalse(status.canResume)
-        assertTrue(status.canReset)
+        assertFalse(status.canReset) // Reset disabled when IDLE per Section 12 requirements
     }
 
     @Test
