@@ -13,12 +13,17 @@ import com.hiittimer.app.R
 import com.hiittimer.app.data.IntervalType
 import com.hiittimer.app.data.TimerState
 import com.hiittimer.app.data.TimerStatus
+import com.hiittimer.app.performance.PerformanceManager
 
 /**
  * Manager for timer notifications during background operation (TS-005: Platform Integration)
  * Provides persistent notification with timer status and controls
+ * Enhanced with performance optimization (TS-003, TS-004)
  */
-class TimerNotificationManager(private val context: Context) {
+class TimerNotificationManager(
+    private val context: Context,
+    private val performanceManager: PerformanceManager? = null
+) {
 
     companion object {
         private const val CHANNEL_ID = "hiit_timer_channel"

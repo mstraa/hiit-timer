@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.hiittimer.app.audio.AudioManager
 import com.hiittimer.app.audio.AudioSettings
 import com.hiittimer.app.data.*
+import com.hiittimer.app.performance.PerformanceManager
 import com.hiittimer.app.service.TimerServiceConnection
 import com.hiittimer.app.timer.TimerManager
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,8 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     // Fallback for when service is not connected
     private val fallbackAudioManager = AudioManager(application)
     private val fallbackWorkoutHistoryRepository = InMemoryWorkoutHistoryRepository()
-    private val fallbackTimerManager = TimerManager(fallbackAudioManager, fallbackWorkoutHistoryRepository)
+    private val fallbackPerformanceManager = PerformanceManager(application)
+    private val fallbackTimerManager = TimerManager(fallbackAudioManager, fallbackWorkoutHistoryRepository, fallbackPerformanceManager)
 
     // Exposed state flows - use service when available, fallback otherwise
     val timerStatus: StateFlow<TimerStatus> = serviceConnection.timerStatus
@@ -32,6 +34,9 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     val isServiceConnected: StateFlow<Boolean> = serviceConnection.isServiceConnected
 
     init {
+        // Initialize performance monitoring
+        fallbackPerformanceManager.initialize()
+
         // Bind to timer service for background operation
         serviceConnection.bindService()
     }
@@ -163,9 +168,24 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
         return serviceConnection.getWorkoutHistoryRepository() ?: fallbackWorkoutHistoryRepository
     }
 
+    /**
+     * Get performance manager for performance monitoring (TS-003, TS-004)
+     */
+    fun getPerformanceManager(): PerformanceManager {
+        return fallbackPerformanceManager
+    }
+
+    /**
+     * Force memory cleanup for performance optimization
+     */
+    fun forceMemoryCleanup() {
+        fallbackPerformanceManager.forceMemoryCleanup()
+    }
+
     override fun onCleared() {
         super.onCleared()
         serviceConnection.cleanup()
+        fallbackPerformanceManager.cleanup()
         fallbackTimerManager.cleanup()
         fallbackAudioManager.cleanup()
     }

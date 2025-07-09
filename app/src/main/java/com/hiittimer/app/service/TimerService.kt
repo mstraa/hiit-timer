@@ -6,6 +6,7 @@ import android.os.Binder
 import android.os.IBinder
 import com.hiittimer.app.audio.AudioManager
 import com.hiittimer.app.data.*
+import com.hiittimer.app.performance.PerformanceManager
 import com.hiittimer.app.timer.TimerManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +38,7 @@ class TimerService : Service() {
     private lateinit var audioManager: AudioManager
     private lateinit var notificationManager: TimerNotificationManager
     private lateinit var wakeLockManager: WakeLockManager
+    private lateinit var performanceManager: PerformanceManager
     private var workoutHistoryRepository: WorkoutHistoryRepository? = null
     private var statusMonitoringJob: Job? = null
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -54,9 +56,13 @@ class TimerService : Service() {
         // Initialize managers
         audioManager = AudioManager(this)
         workoutHistoryRepository = InMemoryWorkoutHistoryRepository()
-        timerManager = TimerManager(audioManager, workoutHistoryRepository)
-        notificationManager = TimerNotificationManager(this)
+        performanceManager = PerformanceManager(this)
+        timerManager = TimerManager(audioManager, workoutHistoryRepository, performanceManager)
+        notificationManager = TimerNotificationManager(this, performanceManager)
         wakeLockManager = WakeLockManager(this)
+
+        // Initialize performance monitoring
+        performanceManager.initialize()
         
         // Create notification channel
         notificationManager.createNotificationChannel()
@@ -99,8 +105,10 @@ class TimerService : Service() {
         )
         startForeground(NOTIFICATION_ID, notification)
         
-        // Acquire wake lock to keep screen on
-        wakeLockManager.acquireWakeLock()
+        // Acquire wake lock to keep screen on (only if performance allows)
+        if (performanceManager.shouldUseWakeLock()) {
+            wakeLockManager.acquireWakeLock()
+        }
         
         // Start timer
         timerManager.start(config, presetId, presetName, exerciseName)
@@ -128,8 +136,10 @@ class TimerService : Service() {
     private fun resumeTimer() {
         timerManager.resume()
         
-        // Re-acquire wake lock
-        wakeLockManager.acquireWakeLock()
+        // Re-acquire wake lock (only if performance allows)
+        if (performanceManager.shouldUseWakeLock()) {
+            wakeLockManager.acquireWakeLock()
+        }
         
         // Update notification
         updateNotification()
@@ -209,6 +219,7 @@ class TimerService : Service() {
         statusMonitoringJob?.cancel()
         serviceScope.cancel()
         wakeLockManager.releaseWakeLock()
+        performanceManager.cleanup()
         timerManager.cleanup()
         audioManager.cleanup()
     }

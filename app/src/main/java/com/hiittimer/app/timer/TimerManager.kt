@@ -6,14 +6,17 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.hiittimer.app.performance.PerformanceManager
 
 /**
  * Manages the HIIT timer functionality with precise timing and audio cues
  * Now includes workout session tracking (FR-010: Workout Session Tracking)
+ * Enhanced with performance optimization (TS-003, TS-004)
  */
 class TimerManager(
     private val audioManager: AudioManager? = null,
-    private val workoutHistoryRepository: WorkoutHistoryRepository? = null
+    private val workoutHistoryRepository: WorkoutHistoryRepository? = null,
+    private val performanceManager: PerformanceManager? = null
 ) {
     private val _timerStatus = MutableStateFlow(TimerStatus())
     val timerStatus: StateFlow<TimerStatus> = _timerStatus.asStateFlow()
@@ -109,16 +112,24 @@ class TimerManager(
         timerJob = scope.launch {
             while (_timerStatus.value.state == TimerState.RUNNING &&
                    (_timerStatus.value.timeRemainingSeconds > 0 || _timerStatus.value.timeRemainingMilliseconds > 0)) {
-                delay(100) // 100ms intervals for millisecond precision (FR-017)
+
+                // Use performance-optimized interval (TS-003: Performance optimization)
+                val interval = performanceManager?.getOptimalTimerInterval() ?: 100L
+                val startTime = System.currentTimeMillis()
+                delay(interval)
 
                 val currentStatus = _timerStatus.value
                 var newSeconds = currentStatus.timeRemainingSeconds
-                var newMilliseconds = currentStatus.timeRemainingMilliseconds - 100
+                var newMilliseconds = currentStatus.timeRemainingMilliseconds - interval.toInt()
+
+                // Track timer accuracy for performance monitoring (TS-003)
+                val actualDelay = System.currentTimeMillis() - startTime
+                performanceManager?.updateTimerAccuracy(kotlin.math.abs(actualDelay - interval))
 
                 // Handle millisecond underflow
                 if (newMilliseconds < 0) {
                     newSeconds -= 1
-                    newMilliseconds = 900 // Reset to 900ms (0.9 seconds)
+                    newMilliseconds = 1000 - interval.toInt() // Adjust based on interval
                 }
 
                 // Play countdown beeps (FR-006: 3-second countdown beeps)
