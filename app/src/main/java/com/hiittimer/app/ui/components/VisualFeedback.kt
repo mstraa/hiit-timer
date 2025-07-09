@@ -14,69 +14,24 @@ import com.hiittimer.app.data.TimerStatus
 import com.hiittimer.app.ui.theme.HIITColors
 
 /**
- * Full-screen visual feedback overlay that provides animated color feedback
- * during work and rest intervals as specified in FR-004
+ * Refined visual feedback overlay (FR-024: Refined Visual Feedback)
+ * Removed continuous color changes, keeping only flash effects at interval transitions
+ * No background color changes during active timing for clean, minimal visual feedback
  */
 @Composable
 fun VisualFeedbackOverlay(
     timerStatus: TimerStatus,
     modifier: Modifier = Modifier
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
-    
-    // Determine overlay color based on interval type and theme
-    val overlayColor = when {
-        timerStatus.currentInterval == IntervalType.WORK -> {
-            if (isDarkTheme) HIITColors.WorkIndicatorDark else HIITColors.WorkIndicatorLight
-        }
-        timerStatus.currentInterval == IntervalType.REST -> {
-            if (isDarkTheme) HIITColors.RestIndicatorDark else HIITColors.RestIndicatorLight
-        }
-        else -> Color.Transparent
-    }
-    
-    // Animation for smooth transitions (300ms as per PRD)
-    val animatedAlpha by animateFloatAsState(
-        targetValue = if (timerStatus.state == TimerState.RUNNING) 0.25f else 0f,
-        animationSpec = tween(
-            durationMillis = 300,
-            easing = FastOutSlowInEasing
-        ),
-        label = "overlay_alpha"
-    )
-    
-    // Pulsing animation during active intervals
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse_transition")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_alpha"
-    )
-    
-    // Use pulsing effect only when timer is running
-    val finalAlpha = if (timerStatus.state == TimerState.RUNNING) {
-        pulseAlpha * animatedAlpha
-    } else {
-        animatedAlpha
-    }
-    
-    // Render the overlay
-    if (finalAlpha > 0f) {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(overlayColor.copy(alpha = finalAlpha))
-        )
-    }
+    // FR-024: Remove continuous light color changes during timer operation
+    // This component now only handles flash effects at interval transitions
+    // No continuous background color changes or pulsing animations
 }
 
 /**
- * Enhanced visual feedback that includes transition effects
- * for interval changes as specified in FR-004
+ * Enhanced flash effects for interval transitions (FR-024: Refined Visual Feedback)
+ * Big flash at work interval start (green) and rest interval start (red)
+ * Clean, minimal visual feedback during countdown
  */
 @Composable
 fun IntervalTransitionEffect(
@@ -84,44 +39,44 @@ fun IntervalTransitionEffect(
     modifier: Modifier = Modifier
 ) {
     val isDarkTheme = isSystemInDarkTheme()
-    
-    // Track interval changes for transition effects
+
+    // Track interval changes for flash effects
     var previousInterval by remember { mutableStateOf(timerStatus.currentInterval) }
-    var showTransition by remember { mutableStateOf(false) }
-    
-    // Detect interval changes
-    LaunchedEffect(timerStatus.currentInterval) {
+    var showFlash by remember { mutableStateOf(false) }
+
+    // Detect interval changes and trigger flash effect (FR-024)
+    LaunchedEffect(timerStatus.currentInterval, timerStatus.state) {
         if (previousInterval != timerStatus.currentInterval && timerStatus.state == TimerState.RUNNING) {
-            showTransition = true
+            showFlash = true
             previousInterval = timerStatus.currentInterval
-            // Hide transition after animation completes
-            kotlinx.coroutines.delay(300)
-            showTransition = false
+            // Big flash duration - longer and more prominent
+            kotlinx.coroutines.delay(600) // Increased from 300ms for bigger flash effect
+            showFlash = false
         }
     }
-    
-    // Transition animation
-    val transitionAlpha by animateFloatAsState(
-        targetValue = if (showTransition) 0.5f else 0f,
+
+    // Big flash animation with enhanced visibility
+    val flashAlpha by animateFloatAsState(
+        targetValue = if (showFlash) 0.8f else 0f, // Increased from 0.5f for bigger flash
         animationSpec = tween(
-            durationMillis = 300,
+            durationMillis = 600, // Longer duration for more prominent flash
             easing = FastOutSlowInEasing
         ),
-        label = "transition_alpha"
+        label = "flash_alpha"
     )
-    
-    // Color for transition effect
-    val transitionColor = when (timerStatus.currentInterval) {
+
+    // Flash color based on interval type (FR-024: Green for work, Red for rest)
+    val flashColor = when (timerStatus.currentInterval) {
         IntervalType.WORK -> if (isDarkTheme) HIITColors.WorkIndicatorDark else HIITColors.WorkIndicatorLight
         IntervalType.REST -> if (isDarkTheme) HIITColors.RestIndicatorDark else HIITColors.RestIndicatorLight
     }
-    
-    // Render transition effect
-    if (transitionAlpha > 0f) {
+
+    // Render big flash effect only at interval transitions
+    if (flashAlpha > 0f) {
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(transitionColor.copy(alpha = transitionAlpha))
+                .background(flashColor.copy(alpha = flashAlpha))
         )
     }
 }

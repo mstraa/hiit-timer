@@ -13,8 +13,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Manages audio playback for HIIT timer as specified in FR-006 and FR-007
+ * Manages audio playback for HIIT timer as specified in FR-006, FR-007, and FR-025
  * Provides distinct sounds for work/rest intervals and countdown beeps
+ * Enhanced with media audio stream integration (FR-025: Media Audio Output)
  */
 class AudioManager(private val context: Context) {
     private val systemAudioManager = context.getSystemService(Context.AUDIO_SERVICE) as SystemAudioManager
@@ -37,8 +38,9 @@ class AudioManager(private val context: Context) {
     
     private fun initializeToneGenerator() {
         try {
+            // FR-025: Use STREAM_MUSIC instead of STREAM_NOTIFICATION for media audio output
             toneGenerator = ToneGenerator(
-                SystemAudioManager.STREAM_NOTIFICATION,
+                SystemAudioManager.STREAM_MUSIC,
                 (_audioSettings.value.volume * 100).toInt()
             )
         } catch (e: RuntimeException) {
@@ -116,10 +118,10 @@ class AudioManager(private val context: Context) {
             @Suppress("DEPRECATION")
             val result = systemAudioManager.requestAudioFocus(
                 { focusChange -> handleAudioFocusChange(focusChange) },
-                SystemAudioManager.STREAM_NOTIFICATION,
+                SystemAudioManager.STREAM_MUSIC, // FR-025: Use STREAM_MUSIC for media audio output
                 SystemAudioManager.AUDIOFOCUS_GAIN_TRANSIENT
             )
-            
+
             if (result == SystemAudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 hasAudioFocus = true
                 onFocusGranted()
@@ -129,16 +131,17 @@ class AudioManager(private val context: Context) {
     
     @RequiresApi(Build.VERSION_CODES.O)
     private fun requestAudioFocusApi26(onFocusGranted: () -> Unit) {
+        // FR-025: Use media audio attributes for proper media stream integration
         val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .setUsage(AudioAttributes.USAGE_MEDIA) // Changed from USAGE_NOTIFICATION
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC) // Changed from CONTENT_TYPE_SONIFICATION
             .build()
-        
+
         audioFocusRequest = AudioFocusRequest.Builder(SystemAudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
             .setAudioAttributes(audioAttributes)
             .setOnAudioFocusChangeListener { focusChange -> handleAudioFocusChange(focusChange) }
             .build()
-        
+
         audioFocusRequest?.let { request ->
             val result = systemAudioManager.requestAudioFocus(request)
             if (result == SystemAudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
