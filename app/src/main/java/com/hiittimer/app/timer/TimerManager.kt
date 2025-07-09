@@ -1,10 +1,7 @@
 package com.hiittimer.app.timer
 
 import com.hiittimer.app.audio.AudioManager
-import com.hiittimer.app.data.IntervalType
-import com.hiittimer.app.data.TimerConfig
-import com.hiittimer.app.data.TimerState
-import com.hiittimer.app.data.TimerStatus
+import com.hiittimer.app.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,19 +9,42 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Manages the HIIT timer functionality with precise timing and audio cues
+ * Now includes workout session tracking (FR-010: Workout Session Tracking)
  */
-class TimerManager(private val audioManager: AudioManager? = null) {
+class TimerManager(
+    private val audioManager: AudioManager? = null,
+    private val workoutHistoryRepository: WorkoutHistoryRepository? = null
+) {
     private val _timerStatus = MutableStateFlow(TimerStatus())
     val timerStatus: StateFlow<TimerStatus> = _timerStatus.asStateFlow()
-    
+
     private var timerJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    // Session tracking variables (FR-010: Workout Session Tracking)
+    private var sessionStartTime: Long = 0
+    private var currentPresetId: String? = null
+    private var currentPresetName: String = "Custom Workout"
+    private var currentExerciseName: String? = null
+    private var actualWorkTimeMs: Long = 0
+    private var actualRestTimeMs: Long = 0
+    private var lastIntervalStartTime: Long = 0
     
     /**
      * Start the timer with the given configuration
+     * Now includes session tracking initialization (FR-010)
      */
-    fun start(config: TimerConfig) {
+    fun start(config: TimerConfig, presetId: String? = null, presetName: String = "Custom Workout", exerciseName: String? = null) {
         if (_timerStatus.value.state != TimerState.IDLE) return
+
+        // Initialize session tracking (FR-010: Workout Session Tracking)
+        sessionStartTime = System.currentTimeMillis()
+        currentPresetId = presetId
+        currentPresetName = presetName
+        currentExerciseName = exerciseName
+        actualWorkTimeMs = 0
+        actualRestTimeMs = 0
+        lastIntervalStartTime = sessionStartTime
 
         _timerStatus.value = TimerStatus(
             state = TimerState.RUNNING,
@@ -63,9 +83,16 @@ class TimerManager(private val audioManager: AudioManager? = null) {
     
     /**
      * Reset the timer to initial state
+     * Now includes session saving if workout was started (FR-010)
      */
     fun reset() {
+        // Save session if workout was started (FR-010: Workout Session Tracking)
+        if (sessionStartTime > 0) {
+            saveCurrentSession()
+        }
+
         timerJob?.cancel()
+        resetSessionTracking()
         _timerStatus.value = TimerStatus()
     }
     
@@ -117,8 +144,13 @@ class TimerManager(private val audioManager: AudioManager? = null) {
         val currentStatus = _timerStatus.value
         val config = currentStatus.config
 
+        // Track actual time spent in current interval (FR-010: Session tracking)
+        val now = System.currentTimeMillis()
+        val intervalDuration = now - lastIntervalStartTime
+
         when (currentStatus.currentInterval) {
             IntervalType.WORK -> {
+                actualWorkTimeMs += intervalDuration
                 // Work interval finished, check if rest is disabled (FR-001: "No Rest" toggle)
                 if (config.noRest) {
                     // Skip rest interval, go directly to next round
@@ -134,6 +166,7 @@ class TimerManager(private val audioManager: AudioManager? = null) {
                         )
                         // Play work interval start sound (FR-006: Audio cues)
                         audioManager?.playWorkIntervalSound()
+                        lastIntervalStartTime = System.currentTimeMillis()
                     } else {
                         // All rounds completed
                         timerJob?.cancel()
@@ -144,6 +177,8 @@ class TimerManager(private val audioManager: AudioManager? = null) {
                         )
                         // Play completion sound (FR-006: Audio cues)
                         audioManager?.playCompletionSound()
+                        // Save completed session (FR-010: Workout Session Tracking)
+                        saveCurrentSession()
                     }
                 } else {
                     // Start rest interval
@@ -154,9 +189,11 @@ class TimerManager(private val audioManager: AudioManager? = null) {
                     )
                     // Play rest interval start sound (FR-006: Audio cues)
                     audioManager?.playRestIntervalSound()
+                    lastIntervalStartTime = System.currentTimeMillis()
                 }
             }
             IntervalType.REST -> {
+                actualRestTimeMs += intervalDuration
                 // Rest interval finished, check if we should continue to next round
                 val nextRound = currentStatus.currentRound + 1
 
@@ -170,6 +207,7 @@ class TimerManager(private val audioManager: AudioManager? = null) {
                     )
                     // Play work interval start sound (FR-006: Audio cues)
                     audioManager?.playWorkIntervalSound()
+                    lastIntervalStartTime = System.currentTimeMillis()
                 } else {
                     // All rounds completed
                     timerJob?.cancel()
@@ -180,15 +218,81 @@ class TimerManager(private val audioManager: AudioManager? = null) {
                     )
                     // Play completion sound (FR-006: Audio cues)
                     audioManager?.playCompletionSound()
+                    // Save completed session (FR-010: Workout Session Tracking)
+                    saveCurrentSession()
                 }
             }
         }
     }
     
     /**
+     * Save current workout session (FR-010: Workout Session Tracking)
+     */
+    private fun saveCurrentSession() {
+        if (sessionStartTime == 0L || workoutHistoryRepository == null) return
+
+        val currentStatus = _timerStatus.value
+        val endTime = System.currentTimeMillis()
+
+        // Calculate completed rounds based on current state
+        val completedRounds = when (currentStatus.state) {
+            TimerState.FINISHED -> currentStatus.currentRound
+            TimerState.RUNNING, TimerState.PAUSED -> {
+                // If we're in a work interval, count current round as completed
+                if (currentStatus.currentInterval == IntervalType.WORK) {
+                    currentStatus.currentRound - 1
+                } else {
+                    currentStatus.currentRound
+                }
+            }
+            else -> 0
+        }
+
+        val session = WorkoutSession.fromTimerSession(
+            config = currentStatus.config,
+            presetId = currentPresetId,
+            presetName = currentPresetName,
+            exerciseName = currentExerciseName,
+            completedRounds = completedRounds,
+            startTime = sessionStartTime,
+            endTime = endTime,
+            actualWorkTimeMs = actualWorkTimeMs,
+            actualRestTimeMs = actualRestTimeMs
+        )
+
+        // Save session asynchronously
+        scope.launch {
+            try {
+                workoutHistoryRepository.saveWorkoutSession(session)
+            } catch (e: Exception) {
+                // Log error but don't crash the app
+                // In a real app, you might want to emit an error state
+            }
+        }
+    }
+
+    /**
+     * Reset session tracking variables
+     */
+    private fun resetSessionTracking() {
+        sessionStartTime = 0
+        currentPresetId = null
+        currentPresetName = "Custom Workout"
+        currentExerciseName = null
+        actualWorkTimeMs = 0
+        actualRestTimeMs = 0
+        lastIntervalStartTime = 0
+    }
+
+    /**
      * Clean up resources
      */
     fun cleanup() {
+        // Save session if workout was in progress
+        if (sessionStartTime > 0) {
+            saveCurrentSession()
+        }
+
         timerJob?.cancel()
         scope.cancel()
     }

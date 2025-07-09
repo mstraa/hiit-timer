@@ -43,7 +43,8 @@ import com.hiittimer.app.ui.utils.*
 @Composable
 fun TimerScreen(
     viewModel: TimerViewModel = viewModel(),
-    onNavigateToConfig: () -> Unit = {}
+    onNavigateToConfig: () -> Unit = {},
+    onNavigateToHistory: () -> Unit = {}
 ) {
     val timerStatus by viewModel.timerStatus.collectAsState()
     val audioSettings by viewModel.audioSettings.collectAsState()
@@ -132,7 +133,8 @@ fun TimerScreen(
             themePreference = themePreference,
             onToggleAudio = { viewModel.toggleAudio() },
             onVolumeChange = { volume -> viewModel.setAudioVolume(volume) },
-            onThemeChange = { preference -> viewModel.setThemePreference(preference) }
+            onThemeChange = { preference -> viewModel.setThemePreference(preference) },
+            onNavigateToHistory = onNavigateToHistory
         )
 
         // Timer configuration modal (FR-016: Settings UI Reorganization)
