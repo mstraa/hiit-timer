@@ -17,21 +17,21 @@ import kotlinx.coroutines.flow.asStateFlow
  * Provides distinct sounds for work/rest intervals and countdown beeps
  * Enhanced with media audio stream integration (FR-025: Media Audio Output)
  */
-class AudioManager(private val context: Context) {
+class AudioManager(private val context: Context, initialSettings: AudioSettings = AudioSettings()) {
     private val systemAudioManager = context.getSystemService(Context.AUDIO_SERVICE) as SystemAudioManager
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    
-    // Audio settings state
-    private val _audioSettings = MutableStateFlow(AudioSettings())
+
+    // Audio settings state - initialize with provided settings
+    private val _audioSettings = MutableStateFlow(initialSettings)
     val audioSettings: StateFlow<AudioSettings> = _audioSettings.asStateFlow()
-    
+
     // Audio focus management
     private var audioFocusRequest: AudioFocusRequest? = null
     private var hasAudioFocus = false
-    
+
     // Tone generators for different sounds
     private var toneGenerator: ToneGenerator? = null
-    
+
     init {
         initializeToneGenerator()
     }

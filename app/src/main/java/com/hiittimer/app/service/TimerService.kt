@@ -52,9 +52,10 @@ class TimerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        
-        // Initialize managers
-        audioManager = AudioManager(this)
+
+        // Initialize managers with current audio settings
+        val preferencesManager = com.hiittimer.app.data.PreferencesManager(this)
+        audioManager = AudioManager(this, preferencesManager.audioSettings.value)
         workoutHistoryRepository = InMemoryWorkoutHistoryRepository()
         performanceManager = PerformanceManager(this)
         timerManager = TimerManager(audioManager, workoutHistoryRepository, performanceManager)
@@ -63,7 +64,7 @@ class TimerService : Service() {
 
         // Initialize performance monitoring
         performanceManager.initialize()
-        
+
         // Create notification channel
         notificationManager.createNotificationChannel()
     }

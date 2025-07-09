@@ -22,7 +22,7 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     private val serviceConnection = TimerServiceConnection(application)
 
     // Fallback for when service is not connected
-    private val fallbackAudioManager = AudioManager(application)
+    private val fallbackAudioManager = AudioManager(application, preferencesManager.audioSettings.value)
     private val fallbackWorkoutHistoryRepository = InMemoryWorkoutHistoryRepository()
     private val fallbackPerformanceManager = PerformanceManager(application)
     private val fallbackTimerManager = TimerManager(fallbackAudioManager, fallbackWorkoutHistoryRepository, fallbackPerformanceManager)

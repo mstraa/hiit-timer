@@ -96,6 +96,7 @@ class TimerManager(
     /**
      * Reset the timer to initial state
      * Now includes session saving if workout was started (FR-010)
+     * Preserves current configuration settings
      */
     fun reset() {
         // Save session if workout was started (FR-010: Workout Session Tracking)
@@ -105,7 +106,17 @@ class TimerManager(
 
         timerJob?.cancel()
         resetSessionTracking()
-        _timerStatus.value = TimerStatus()
+
+        // Preserve current configuration when resetting
+        val currentConfig = _timerStatus.value.config
+        _timerStatus.value = TimerStatus(
+            state = TimerState.IDLE,
+            currentInterval = IntervalType.WORK,
+            timeRemainingSeconds = currentConfig.workTimeSeconds,
+            timeRemainingMilliseconds = 0,
+            currentRound = 1,
+            config = currentConfig
+        )
     }
     
     /**
