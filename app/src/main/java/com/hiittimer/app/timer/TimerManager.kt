@@ -38,30 +38,39 @@ class TimerManager(
      * Now includes session tracking initialization (FR-010)
      */
     fun start(config: TimerConfig, presetId: String? = null, presetName: String = "Custom Workout", exerciseName: String? = null) {
-        if (_timerStatus.value.state != TimerState.IDLE) return
+        try {
+            if (_timerStatus.value.state != TimerState.IDLE) return
 
-        // Initialize session tracking (FR-010: Workout Session Tracking)
-        sessionStartTime = System.currentTimeMillis()
-        currentPresetId = presetId
-        currentPresetName = presetName
-        currentExerciseName = exerciseName
-        actualWorkTimeMs = 0
-        actualRestTimeMs = 0
-        lastIntervalStartTime = sessionStartTime
+            // Initialize session tracking (FR-010: Workout Session Tracking)
+            sessionStartTime = System.currentTimeMillis()
+            currentPresetId = presetId
+            currentPresetName = presetName
+            currentExerciseName = exerciseName
+            actualWorkTimeMs = 0
+            actualRestTimeMs = 0
+            lastIntervalStartTime = sessionStartTime
 
-        _timerStatus.value = TimerStatus(
-            state = TimerState.RUNNING,
-            currentInterval = IntervalType.WORK,
-            timeRemainingSeconds = config.workTimeSeconds,
-            timeRemainingMilliseconds = 0, // Start at 0 milliseconds
-            currentRound = 1,
-            config = config
-        )
+            _timerStatus.value = TimerStatus(
+                state = TimerState.RUNNING,
+                currentInterval = IntervalType.WORK,
+                timeRemainingSeconds = config.workTimeSeconds,
+                timeRemainingMilliseconds = 0, // Start at 0 milliseconds
+                currentRound = 1,
+                config = config
+            )
 
-        // Play work interval start sound (FR-006: Audio cues)
-        audioManager?.playWorkIntervalSound()
+            // Play work interval start sound (FR-006: Audio cues)
+            try {
+                audioManager?.playWorkIntervalSound()
+            } catch (e: Exception) {
+                // Continue without audio if there's an audio issue
+            }
 
-        startCountdown()
+            startCountdown()
+        } catch (e: Exception) {
+            // Reset to idle state if start fails
+            _timerStatus.value = TimerStatus()
+        }
     }
     
     /**
@@ -110,13 +119,14 @@ class TimerManager(
     
     private fun startCountdown() {
         timerJob = scope.launch {
-            while (_timerStatus.value.state == TimerState.RUNNING &&
-                   (_timerStatus.value.timeRemainingSeconds > 0 || _timerStatus.value.timeRemainingMilliseconds > 0)) {
+            try {
+                while (_timerStatus.value.state == TimerState.RUNNING &&
+                       (_timerStatus.value.timeRemainingSeconds > 0 || _timerStatus.value.timeRemainingMilliseconds > 0)) {
 
-                // Use performance-optimized interval (TS-003: Performance optimization)
-                val interval = performanceManager?.getOptimalTimerInterval() ?: 100L
-                val startTime = System.currentTimeMillis()
-                delay(interval)
+                    // Use performance-optimized interval (TS-003: Performance optimization)
+                    val interval = performanceManager?.getOptimalTimerInterval() ?: 100L
+                    val startTime = System.currentTimeMillis()
+                    delay(interval)
 
                 val currentStatus = _timerStatus.value
                 var newSeconds = currentStatus.timeRemainingSeconds
@@ -147,6 +157,10 @@ class TimerManager(
                         timeRemainingMilliseconds = newMilliseconds
                     )
                 }
+            }
+            } catch (e: Exception) {
+                // Handle any errors during countdown
+                _timerStatus.value = _timerStatus.value.copy(state = TimerState.IDLE)
             }
         }
     }

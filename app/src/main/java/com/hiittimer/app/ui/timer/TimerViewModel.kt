@@ -27,8 +27,8 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     private val fallbackPerformanceManager = PerformanceManager(application)
     private val fallbackTimerManager = TimerManager(fallbackAudioManager, fallbackWorkoutHistoryRepository, fallbackPerformanceManager)
 
-    // Exposed state flows - use service when available, fallback otherwise
-    val timerStatus: StateFlow<TimerStatus> = serviceConnection.timerStatus
+    // Exposed state flows - use fallback timer manager for reliable state
+    val timerStatus: StateFlow<TimerStatus> = fallbackTimerManager.timerStatus
     val audioSettings: StateFlow<AudioSettings> = preferencesManager.audioSettings
     val themePreference: StateFlow<ThemePreference> = preferencesManager.themePreference
     val isServiceConnected: StateFlow<Boolean> = serviceConnection.isServiceConnected
@@ -42,15 +42,16 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Start the timer with current configuration (using background service)
+     * Start the timer with current configuration
      */
     fun startTimer() {
         val config = timerStatus.value.config
+        // Always use fallback timer manager for reliable operation
+        fallbackTimerManager.start(config)
+
+        // Also start service for background operation if available
         if (serviceConnection.isBound()) {
             serviceConnection.startTimer(config)
-        } else {
-            // Fallback to direct timer manager if service not available
-            fallbackTimerManager.start(config)
         }
     }
 
@@ -66,11 +67,12 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
             isUnlimited = config.isUnlimited,
             noRest = config.noRest
         )
+        // Always use fallback timer manager for reliable operation
+        fallbackTimerManager.start(config, preset.id, preset.name, preset.exerciseName)
+
+        // Also start service for background operation if available
         if (serviceConnection.isBound()) {
             serviceConnection.startTimer(config, preset.id, preset.name, preset.exerciseName)
-        } else {
-            // Fallback to direct timer manager if service not available
-            fallbackTimerManager.start(config, preset.id, preset.name, preset.exerciseName)
         }
     }
     
@@ -78,10 +80,9 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Pause the timer
      */
     fun pauseTimer() {
+        fallbackTimerManager.pause()
         if (serviceConnection.isBound()) {
             serviceConnection.pauseTimer()
-        } else {
-            fallbackTimerManager.pause()
         }
     }
 
@@ -89,10 +90,9 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Resume the timer
      */
     fun resumeTimer() {
+        fallbackTimerManager.resume()
         if (serviceConnection.isBound()) {
             serviceConnection.resumeTimer()
-        } else {
-            fallbackTimerManager.resume()
         }
     }
 
@@ -100,10 +100,9 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Reset the timer
      */
     fun resetTimer() {
+        fallbackTimerManager.reset()
         if (serviceConnection.isBound()) {
             serviceConnection.resetTimer()
-        } else {
-            fallbackTimerManager.reset()
         }
     }
     
