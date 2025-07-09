@@ -80,78 +80,91 @@ fun TimerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            // FR-019: Edge-to-edge content with appropriate padding for gesture areas
-            .padding(horizontal = 16.dp) // Minimum margins for gesture navigation
     ) {
-        // Adaptive layout based on orientation (FR-015: Landscape support)
-        if (isLandscapeMode) {
-            LandscapeTimerLayout(
-                timerStatus = timerStatus,
-                audioSettings = audioSettings,
-                intervalColor = intervalColor,
-                adaptivePadding = adaptivePadding,
-                adaptiveSpacing = adaptiveSpacing,
-                adaptiveButtonHeight = adaptiveButtonHeight,
-                adaptiveTimerFontSize = adaptiveTimerFontSize,
-                viewModel = viewModel,
-                onOpenHamburgerMenu = { isHamburgerMenuOpen = true },
-                onOpenTimerConfig = { isTimerConfigOpen = true }
-            )
-        } else {
-            PortraitTimerLayout(
-                timerStatus = timerStatus,
-                audioSettings = audioSettings,
-                intervalColor = intervalColor,
-                adaptivePadding = adaptivePadding,
-                adaptiveSpacing = adaptiveSpacing,
-                adaptiveButtonHeight = adaptiveButtonHeight,
-                adaptiveTimerFontSize = adaptiveTimerFontSize,
-                viewModel = viewModel,
-                onOpenHamburgerMenu = { isHamburgerMenuOpen = true },
-                onOpenTimerConfig = { isTimerConfigOpen = true }
-            )
+        // Content area with padding for gesture navigation
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                // FR-019: Edge-to-edge content with appropriate padding for gesture areas
+                .padding(horizontal = 16.dp) // Minimum margins for gesture navigation
+        ) {
+            // Adaptive layout based on orientation (FR-015: Landscape support)
+            if (isLandscapeMode) {
+                LandscapeTimerLayout(
+                    timerStatus = timerStatus,
+                    audioSettings = audioSettings,
+                    intervalColor = intervalColor,
+                    adaptivePadding = adaptivePadding,
+                    adaptiveSpacing = adaptiveSpacing,
+                    adaptiveButtonHeight = adaptiveButtonHeight,
+                    adaptiveTimerFontSize = adaptiveTimerFontSize,
+                    viewModel = viewModel,
+                    onOpenHamburgerMenu = { isHamburgerMenuOpen = true },
+                    onOpenTimerConfig = { isTimerConfigOpen = true }
+                )
+            } else {
+                PortraitTimerLayout(
+                    timerStatus = timerStatus,
+                    audioSettings = audioSettings,
+                    intervalColor = intervalColor,
+                    adaptivePadding = adaptivePadding,
+                    adaptiveSpacing = adaptiveSpacing,
+                    adaptiveButtonHeight = adaptiveButtonHeight,
+                    adaptiveTimerFontSize = adaptiveTimerFontSize,
+                    viewModel = viewModel,
+                    onOpenHamburgerMenu = { isHamburgerMenuOpen = true },
+                    onOpenTimerConfig = { isTimerConfigOpen = true }
+                )
+            }
         }
 
-        
         // Visual feedback overlays (FR-004: Full-screen visual indicators)
+        // These are positioned outside the content padding to cover the entire screen
         VisualFeedbackOverlay(
             timerStatus = timerStatus,
             modifier = Modifier.fillMaxSize()
         )
 
-        // Interval transition effects
+        // Interval transition effects - full screen without padding
         IntervalTransitionEffect(
             timerStatus = timerStatus,
             modifier = Modifier.fillMaxSize()
         )
 
         // Hamburger menu panel (FR-016: Settings UI Reorganization)
-        HamburgerMenuPanel(
-            isOpen = isHamburgerMenuOpen,
-            onClose = { isHamburgerMenuOpen = false },
-            audioSettings = audioSettings,
-            themePreference = themePreference,
-            onToggleAudio = { viewModel.toggleAudio() },
-            onVolumeChange = { volume -> viewModel.setAudioVolume(volume) },
-            onThemeChange = { preference -> viewModel.setThemePreference(preference) },
-            onNavigateToHistory = onNavigateToHistory
-        )
+        // Positioned with content padding to respect gesture areas
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
+            HamburgerMenuPanel(
+                isOpen = isHamburgerMenuOpen,
+                onClose = { isHamburgerMenuOpen = false },
+                audioSettings = audioSettings,
+                themePreference = themePreference,
+                onToggleAudio = { viewModel.toggleAudio() },
+                onVolumeChange = { volume -> viewModel.setAudioVolume(volume) },
+                onThemeChange = { preference -> viewModel.setThemePreference(preference) },
+                onNavigateToHistory = onNavigateToHistory
+            )
 
-        // Timer configuration modal (FR-016: Settings UI Reorganization)
-        TimerConfigModal(
-            isOpen = isTimerConfigOpen,
-            onClose = { isTimerConfigOpen = false },
-            config = timerStatus.config,
-            onConfigUpdate = { config ->
-                viewModel.updateConfig(
-                    workTimeSeconds = config.workTimeSeconds,
-                    restTimeSeconds = config.restTimeSeconds,
-                    totalRounds = config.totalRounds,
-                    isUnlimited = config.isUnlimited,
-                    noRest = config.noRest
-                )
-            }
-        )
+            // Timer configuration modal (FR-016: Settings UI Reorganization)
+            TimerConfigModal(
+                isOpen = isTimerConfigOpen,
+                onClose = { isTimerConfigOpen = false },
+                config = timerStatus.config,
+                onConfigUpdate = { config ->
+                    viewModel.updateConfig(
+                        workTimeSeconds = config.workTimeSeconds,
+                        restTimeSeconds = config.restTimeSeconds,
+                        totalRounds = config.totalRounds,
+                        isUnlimited = config.isUnlimited,
+                        noRest = config.noRest
+                    )
+                }
+            )
+        }
     }
 }
 
@@ -304,6 +317,7 @@ private fun TimerHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background) // Match main content background
             .padding(vertical = if (isCompact) adaptiveSpacing / 2 else adaptiveSpacing),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
