@@ -82,7 +82,12 @@ class TimerServiceConnection(
             putExtra(TimerService.EXTRA_PRESET_NAME, presetName)
             putExtra(TimerService.EXTRA_EXERCISE_NAME, exerciseName)
         }
-        context.startForegroundService(intent)
+        // Use startForegroundService for API 26+ and startService for older versions
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
     }
 
     /**
