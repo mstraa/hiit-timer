@@ -78,17 +78,17 @@ class TimerManager(
      */
     fun pause() {
         if (_timerStatus.value.state != TimerState.RUNNING) return
-        
+
         timerJob?.cancel()
         _timerStatus.value = _timerStatus.value.copy(state = TimerState.PAUSED)
     }
     
     /**
-     * Resume the timer
+     * Resume the timer from paused state
      */
     fun resume() {
         if (_timerStatus.value.state != TimerState.PAUSED) return
-        
+
         _timerStatus.value = _timerStatus.value.copy(state = TimerState.RUNNING)
         startCountdown()
     }

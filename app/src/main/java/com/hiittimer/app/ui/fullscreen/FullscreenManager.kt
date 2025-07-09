@@ -70,27 +70,30 @@ class FullscreenManager(private val activity: Activity) {
     /**
      * Set enhanced fullscreen mode (FR-023: Enhanced fullscreen experience)
      * - Status bar remains visible at all times
+     * - Navigation bar consistently hidden during timer operation
      * - Unified background color between status bar area and content
      * - Edge-to-edge content with proper insets handling
      * - No color transitions during fullscreen mode
      */
     private fun setEnhancedFullscreen() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11+ (API 30+) - Keep status bar visible
+            // Android 11+ (API 30+) - Keep status bar visible, hide navigation consistently
             activity.window.insetsController?.let { controller ->
                 controller.show(WindowInsets.Type.statusBars())
                 controller.hide(WindowInsets.Type.navigationBars())
                 controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
         } else {
-            // Android 10 and below - Keep status bar visible, hide navigation
+            // Android 10 and below - Keep status bar visible, hide navigation consistently
             @Suppress("DEPRECATION")
             activity.window.decorView.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 // Note: No SYSTEM_UI_FLAG_FULLSCREEN to keep status bar visible
+                // Added IMMERSIVE_STICKY for consistent navigation bar hiding
             )
         }
 
