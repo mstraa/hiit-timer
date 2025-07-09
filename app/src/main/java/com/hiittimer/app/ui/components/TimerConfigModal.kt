@@ -7,18 +7,24 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -28,7 +34,7 @@ import com.hiittimer.app.data.Preset
 import com.hiittimer.app.data.TimerConfig
 import com.hiittimer.app.ui.components.PresetList
 import com.hiittimer.app.ui.components.RecentPresetsSection
-import com.hiittimer.app.ui.components.DeletePresetDialog
+import com.hiittimer.app.ui.presets.PresetUiState
 import com.hiittimer.app.ui.presets.PresetViewModel
 import com.hiittimer.app.ui.utils.*
 
@@ -207,10 +213,74 @@ private fun TimerConfigContent(
 
         Spacer(modifier = Modifier.height(adaptiveSpacing))
 
+        // Tab content switching (FR-043: Preset Tab Accessibility)
+        when (selectedTab) {
+            0 -> {
+                // Configuration Tab Content
+                ConfigurationTabContent(
+                    workTime = workTime,
+                    onWorkTimeChange = { workTime = it },
+                    restTime = restTime,
+                    onRestTimeChange = { restTime = it },
+                    rounds = rounds,
+                    onRoundsChange = { rounds = it },
+                    isUnlimited = isUnlimited,
+                    onUnlimitedChange = { isUnlimited = it },
+                    noRest = noRest,
+                    onNoRestChange = { noRest = it },
+                    adaptiveSpacing = adaptiveSpacing,
+                    adaptiveButtonHeight = adaptiveButtonHeight,
+                    config = config,
+                    onConfigUpdate = onConfigUpdate,
+                    onClose = onClose
+                )
+            }
+            1 -> {
+                // Presets Tab Content
+                PresetsTabContent(
+                    presetUiState = presetUiState,
+                    presetViewModel = presetViewModel,
+                    onPresetSelect = { preset ->
+                        val presetConfig = preset.toTimerConfig()
+                        onConfigUpdate(presetConfig)
+                        onClose()
+                    },
+                    presetToDelete = presetToDelete,
+                    onPresetToDeleteChange = { presetToDelete = it },
+                    adaptiveSpacing = adaptiveSpacing,
+                    adaptiveButtonHeight = adaptiveButtonHeight
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Configuration tab content component (FR-043)
+ */
+@Composable
+private fun ConfigurationTabContent(
+    workTime: String,
+    onWorkTimeChange: (String) -> Unit,
+    restTime: String,
+    onRestTimeChange: (String) -> Unit,
+    rounds: String,
+    onRoundsChange: (String) -> Unit,
+    isUnlimited: Boolean,
+    onUnlimitedChange: (Boolean) -> Unit,
+    noRest: Boolean,
+    onNoRestChange: (Boolean) -> Unit,
+    adaptiveSpacing: Dp,
+    adaptiveButtonHeight: Dp,
+    config: TimerConfig,
+    onConfigUpdate: (TimerConfig) -> Unit,
+    onClose: () -> Unit
+) {
+    Column {
         // Work time input
         OutlinedTextField(
             value = workTime,
-            onValueChange = { workTime = it },
+            onValueChange = onWorkTimeChange,
             label = { Text("Work Time (seconds)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
@@ -239,7 +309,7 @@ private fun TimerConfigContent(
             }
             Switch(
                 checked = noRest,
-                onCheckedChange = { noRest = it }
+                onCheckedChange = onNoRestChange
             )
         }
 
@@ -249,7 +319,7 @@ private fun TimerConfigContent(
         if (!noRest) {
             OutlinedTextField(
                 value = restTime,
-                onValueChange = { restTime = it },
+                onValueChange = onRestTimeChange,
                 label = { Text("Rest Time (seconds)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -272,7 +342,7 @@ private fun TimerConfigContent(
             )
             Switch(
                 checked = isUnlimited,
-                onCheckedChange = { isUnlimited = it }
+                onCheckedChange = onUnlimitedChange
             )
         }
 
@@ -282,7 +352,7 @@ private fun TimerConfigContent(
         if (!isUnlimited) {
             OutlinedTextField(
                 value = rounds,
-                onValueChange = { rounds = it },
+                onValueChange = onRoundsChange,
                 label = { Text("Number of Rounds") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -324,6 +394,197 @@ private fun TimerConfigContent(
                 text = "Save Configuration",
                 style = MaterialTheme.typography.titleMedium
             )
+        }
+    }
+}
+
+/**
+ * Presets tab content component (FR-043: Preset Tab Accessibility)
+ */
+@Composable
+private fun PresetsTabContent(
+    presetUiState: PresetUiState,
+    presetViewModel: PresetViewModel,
+    onPresetSelect: (Preset) -> Unit,
+    presetToDelete: Preset?,
+    onPresetToDeleteChange: (Preset?) -> Unit,
+    adaptiveSpacing: Dp,
+    adaptiveButtonHeight: Dp
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        if (presetUiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (presetUiState.error != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(adaptiveSpacing))
+                    Text(
+                        text = "Error loading presets",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = presetUiState.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            if (presetUiState.presets.isEmpty()) {
+                // Empty state
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                        Spacer(modifier = Modifier.height(adaptiveSpacing))
+                        Text(
+                            text = "No presets available",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                        Text(
+                            text = "Create custom configurations to save as presets",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                // Presets list
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(adaptiveSpacing)
+                ) {
+                    items(presetUiState.presets) { preset ->
+                        PresetCard(
+                            preset = preset,
+                            onSelect = { onPresetSelect(preset) },
+                            onDelete = { onPresetToDeleteChange(preset) },
+                            adaptiveSpacing = adaptiveSpacing
+                        )
+                    }
+                }
+            }
+        }
+
+        // Delete confirmation dialog
+        presetToDelete?.let { preset ->
+            AlertDialog(
+                onDismissRequest = { onPresetToDeleteChange(null) },
+                title = { Text("Delete Preset") },
+                text = { Text("Are you sure you want to delete '${preset.name}'?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            presetViewModel.deletePreset(preset.id)
+                            onPresetToDeleteChange(null)
+                        }
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { onPresetToDeleteChange(null) }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+    }
+}
+
+/**
+ * Individual preset card component (FR-043)
+ */
+@Composable
+private fun PresetCard(
+    preset: Preset,
+    onSelect: () -> Unit,
+    onDelete: () -> Unit,
+    adaptiveSpacing: Dp
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelect() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(adaptiveSpacing),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = preset.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                preset.description?.let { description ->
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                Text(
+                    text = "${preset.workTimeSeconds}s work • ${preset.restTimeSeconds}s rest • ${preset.totalRounds} rounds",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete preset",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

@@ -13,7 +13,6 @@
         <!-- Exclude temporary and cache data -->
         <exclude domain="cache"/>
         <exclude domain="no_backup"/>
-        <exclude domain="sharedpref" path="temp_*.xml"/>
     </cloud-backup>
 
     <device-transfer>
