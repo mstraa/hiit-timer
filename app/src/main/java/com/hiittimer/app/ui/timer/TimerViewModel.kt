@@ -205,7 +205,8 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
         restTimeSeconds: Int = timerStatus.value.config.restTimeSeconds,
         totalRounds: Int = timerStatus.value.config.totalRounds,
         isUnlimited: Boolean = timerStatus.value.config.isUnlimited,
-        noRest: Boolean = timerStatus.value.config.noRest
+        noRest: Boolean = timerStatus.value.config.noRest,
+        countdownDurationSeconds: Int = timerStatus.value.config.countdownDurationSeconds
     ) {
         try {
             val newConfig = TimerConfig(
@@ -213,7 +214,8 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
                 restTimeSeconds = restTimeSeconds,
                 totalRounds = totalRounds,
                 isUnlimited = isUnlimited,
-                noRest = noRest
+                noRest = noRest,
+                countdownDurationSeconds = countdownDurationSeconds
             )
             Logger.d(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Updating config: work=${workTimeSeconds}s, rest=${restTimeSeconds}s, rounds=${totalRounds}, state=${timerStatus.value.state}")
             // Update config using service if connected, fallback otherwise

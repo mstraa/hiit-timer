@@ -158,9 +158,11 @@ fun TimerScreen(
                         restTimeSeconds = config.restTimeSeconds,
                         totalRounds = config.totalRounds,
                         isUnlimited = config.isUnlimited,
-                        noRest = config.noRest
+                        noRest = config.noRest,
+                        countdownDurationSeconds = config.countdownDurationSeconds
                     )
-                }
+                },
+                onResetTimer = { viewModel.resetTimer() }
             )
         }
     }

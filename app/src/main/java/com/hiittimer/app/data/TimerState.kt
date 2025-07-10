@@ -34,7 +34,7 @@ data class TimerConfig(
 ) : Serializable {
     init {
         require(workTimeSeconds in 5..900) { "Work time must be between 5 and 900 seconds" }
-        require(noRest || restTimeSeconds in 5..300) { "Rest time must be between 5 and 300 seconds when rest is enabled" }
+        require(noRest || restTimeSeconds in 1..300) { "Rest time must be between 1 and 300 seconds when rest is enabled" }
         require(totalRounds in 1..99 || isUnlimited) { "Total rounds must be between 1 and 99 or unlimited" }
         require(countdownDurationSeconds in 3..10) { "Countdown duration must be between 3 and 10 seconds" }
     }

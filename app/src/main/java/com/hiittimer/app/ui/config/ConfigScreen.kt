@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,6 +41,7 @@ fun ConfigScreen(
     var restTime by remember { mutableStateOf(config.restTimeSeconds.toString()) }
     var rounds by remember { mutableStateOf(config.totalRounds.toString()) }
     var isUnlimited by remember { mutableStateOf(config.isUnlimited) }
+    var beginTime by remember { mutableStateOf(config.countdownDurationSeconds.toString()) }
     
     Column(
         modifier = Modifier
@@ -55,16 +57,39 @@ fun ConfigScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
+                onClick = {
+                    val workTimeInt = workTime.toIntOrNull() ?: config.workTimeSeconds
+                    val restTimeInt = restTime.toIntOrNull() ?: config.restTimeSeconds
+                    val roundsInt = rounds.toIntOrNull() ?: config.totalRounds
+                    val beginTimeInt = beginTime.toIntOrNull() ?: config.countdownDurationSeconds
+
+                    viewModel.resetTimer()
+                    viewModel.updateConfig(
+                        workTimeSeconds = workTimeInt,
+                        restTimeSeconds = restTimeInt,
+                        totalRounds = roundsInt,
+                        isUnlimited = isUnlimited,
+                        countdownDurationSeconds = beginTimeInt
+                    )
+                    onNavigateBack()
+                },
+                modifier = Modifier.size(MinTouchTargetSize),
+                enabled = isValidConfiguration(workTime, restTime, rounds, isUnlimited, beginTime)
+            ) {
+                Icon(Icons.Default.Check, contentDescription = "Save")
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "Timer Configuration",
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            IconButton(
                 onClick = onNavigateBack,
                 modifier = Modifier.size(MinTouchTargetSize)
             ) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
-            Text(
-                text = "Timer Configuration",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(start = adaptiveSpacing)
-            )
         }
         
         // Configuration form with adaptive spacing
@@ -91,7 +116,7 @@ fun ConfigScreen(
                 suffix = { Text(stringResource(R.string.seconds)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
-                isError = restTime.toIntOrNull()?.let { it < 5 || it > 300 } ?: true
+                isError = restTime.toIntOrNull()?.let { it < 1 || it > 300 } ?: true
             )
             
             // Rounds configuration
@@ -125,6 +150,17 @@ fun ConfigScreen(
                 }
             }
             
+            // Begin time input
+            OutlinedTextField(
+                value = beginTime,
+                onValueChange = { beginTime = it },
+                label = { Text("Begin Time") },
+                suffix = { Text(stringResource(R.string.seconds)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                isError = beginTime.toIntOrNull()?.let { it < 3 || it > 10 } ?: true
+            )
+            
             Spacer(modifier = Modifier.height(24.dp))
 
             // Audio settings (FR-007: Audio Controls)
@@ -143,32 +179,6 @@ fun ConfigScreen(
             )
 
             Spacer(modifier = Modifier.height(adaptiveSpacing * 2))
-
-            // Save button with adaptive height (FR-015: Minimum 48dp touch targets)
-            Button(
-                onClick = {
-                    val workTimeInt = workTime.toIntOrNull() ?: config.workTimeSeconds
-                    val restTimeInt = restTime.toIntOrNull() ?: config.restTimeSeconds
-                    val roundsInt = rounds.toIntOrNull() ?: config.totalRounds
-
-                    viewModel.updateConfig(
-                        workTimeSeconds = workTimeInt,
-                        restTimeSeconds = restTimeInt,
-                        totalRounds = roundsInt,
-                        isUnlimited = isUnlimited
-                    )
-                    onNavigateBack()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = adaptiveButtonHeight),
-                enabled = isValidConfiguration(workTime, restTime, rounds, isUnlimited)
-            ) {
-                Text(
-                    text = "Save Configuration",
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
         }
     }
 }
@@ -177,13 +187,16 @@ private fun isValidConfiguration(
     workTime: String,
     restTime: String,
     rounds: String,
-    isUnlimited: Boolean
+    isUnlimited: Boolean,
+    beginTime: String
 ): Boolean {
     val workTimeInt = workTime.toIntOrNull()
     val restTimeInt = restTime.toIntOrNull()
     val roundsInt = rounds.toIntOrNull()
+    val beginTimeInt = beginTime.toIntOrNull()
     
     return workTimeInt != null && workTimeInt in 5..900 &&
-            restTimeInt != null && restTimeInt in 5..300 &&
+            restTimeInt != null && restTimeInt in 1..300 &&
+            beginTimeInt != null && beginTimeInt in 3..10 &&
             (isUnlimited || (roundsInt != null && roundsInt in 1..99))
 }

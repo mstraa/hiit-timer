@@ -13,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
@@ -66,14 +68,17 @@ private fun isValidConfiguration(
     restTime: String,
     rounds: String,
     isUnlimited: Boolean,
-    noRest: Boolean
+    noRest: Boolean,
+    beginTime: String
 ): Boolean {
     val workTimeInt = workTime.toIntOrNull()
     val restTimeInt = restTime.toIntOrNull()
     val roundsInt = rounds.toIntOrNull()
+    val beginTimeInt = beginTime.toIntOrNull()
 
     return workTimeInt != null && workTimeInt in 5..900 &&
-            (noRest || (restTimeInt != null && restTimeInt in 5..300)) &&
+            (noRest || (restTimeInt != null && restTimeInt in 1..300)) &&
+            beginTimeInt != null && beginTimeInt in 3..10 &&
             (isUnlimited || (roundsInt != null && roundsInt in 1..99))
 }
 
@@ -87,6 +92,7 @@ fun TimerConfigModal(
     onClose: () -> Unit,
     config: TimerConfig,
     onConfigUpdate: (TimerConfig) -> Unit,
+    onResetTimer: () -> Unit,
     modifier: Modifier = Modifier,
     presetViewModel: PresetViewModel = viewModel()
 ) {
@@ -125,6 +131,7 @@ fun TimerConfigModal(
                     TimerConfigContent(
                         config = config,
                         onConfigUpdate = onConfigUpdate,
+                        onResetTimer = onResetTimer,
                         onClose = onClose,
                         presetViewModel = presetViewModel
                     )
@@ -141,6 +148,7 @@ fun TimerConfigModal(
 private fun TimerConfigContent(
     config: TimerConfig,
     onConfigUpdate: (TimerConfig) -> Unit,
+    onResetTimer: () -> Unit,
     onClose: () -> Unit,
     presetViewModel: PresetViewModel
 ) {
@@ -149,10 +157,7 @@ private fun TimerConfigContent(
     var rounds by remember { mutableStateOf(config.totalRounds.toString()) }
     var isUnlimited by remember { mutableStateOf(config.isUnlimited) }
     var noRest by remember { mutableStateOf(config.noRest) }
-
-    // Tab state for configuration vs presets (FR-008)
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Configuration", "Presets")
+    var beginTime by remember { mutableStateOf(config.countdownDurationSeconds.toString()) }
 
     // Preset management state
     val presetUiState by presetViewModel.uiState.collectAsState()
@@ -169,89 +174,88 @@ private fun TimerConfigContent(
             .padding(adaptivePadding)
             .verticalScroll(scrollState)
     ) {
-        // Header with close button
+        // Header with save and close buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = adaptiveSpacing),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onClose) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Close configuration",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            
+            Spacer(modifier = Modifier.weight(1f))
+            
             Text(
                 text = "Timer Configuration",
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            
+            Spacer(modifier = Modifier.weight(1f))
 
-            IconButton(onClick = onClose) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close configuration",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
+            IconButton(
+                onClick = {
+                    val workTimeInt = workTime.toIntOrNull() ?: config.workTimeSeconds
+                    val restTimeInt = restTime.toIntOrNull() ?: config.restTimeSeconds
+                    val roundsInt = rounds.toIntOrNull() ?: config.totalRounds
+                    val beginTimeInt = beginTime.toIntOrNull() ?: config.countdownDurationSeconds
 
-        // Tab row for Configuration vs Presets (FR-008)
-        TabRow(
-            selectedTabIndex = selectedTab,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleMedium
+                    try {
+                        val newConfig = TimerConfig(
+                            workTimeSeconds = workTimeInt,
+                            restTimeSeconds = restTimeInt,
+                            totalRounds = roundsInt,
+                            isUnlimited = isUnlimited,
+                            noRest = noRest,
+                            countdownDurationSeconds = beginTimeInt
                         )
-                    }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(adaptiveSpacing))
-
-        // Tab content switching (FR-043: Preset Tab Accessibility)
-        when (selectedTab) {
-            0 -> {
-                // Configuration Tab Content
-                ConfigurationTabContent(
-                    workTime = workTime,
-                    onWorkTimeChange = { workTime = it },
-                    restTime = restTime,
-                    onRestTimeChange = { restTime = it },
-                    rounds = rounds,
-                    onRoundsChange = { rounds = it },
-                    isUnlimited = isUnlimited,
-                    onUnlimitedChange = { isUnlimited = it },
-                    noRest = noRest,
-                    onNoRestChange = { noRest = it },
-                    adaptiveSpacing = adaptiveSpacing,
-                    adaptiveButtonHeight = adaptiveButtonHeight,
-                    config = config,
-                    onConfigUpdate = onConfigUpdate,
-                    onClose = onClose
-                )
-            }
-            1 -> {
-                // Presets Tab Content
-                PresetsTabContent(
-                    presetUiState = presetUiState,
-                    presetViewModel = presetViewModel,
-                    onPresetSelect = { preset ->
-                        val presetConfig = preset.toTimerConfig()
-                        onConfigUpdate(presetConfig)
+                        onResetTimer()
+                        onConfigUpdate(newConfig)
                         onClose()
-                    },
-                    presetToDelete = presetToDelete,
-                    onPresetToDeleteChange = { presetToDelete = it },
-                    adaptiveSpacing = adaptiveSpacing,
-                    adaptiveButtonHeight = adaptiveButtonHeight
+                    } catch (e: IllegalArgumentException) {
+                        // Handle validation errors
+                    }
+                },
+                enabled = isValidConfiguration(workTime, restTime, rounds, isUnlimited, noRest, beginTime)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Save configuration",
+                    tint = if (isValidConfiguration(workTime, restTime, rounds, isUnlimited, noRest, beginTime)) 
+                        MaterialTheme.colorScheme.onSurface 
+                    else 
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                 )
             }
         }
+
+        // Configuration Content (tabs removed)
+        ConfigurationTabContent(
+            workTime = workTime,
+            onWorkTimeChange = { workTime = it },
+            restTime = restTime,
+            onRestTimeChange = { restTime = it },
+            rounds = rounds,
+            onRoundsChange = { rounds = it },
+            isUnlimited = isUnlimited,
+            onUnlimitedChange = { isUnlimited = it },
+            noRest = noRest,
+            onNoRestChange = { noRest = it },
+            beginTime = beginTime,
+            onBeginTimeChange = { beginTime = it },
+            adaptiveSpacing = adaptiveSpacing,
+            adaptiveButtonHeight = adaptiveButtonHeight,
+            config = config,
+            onConfigUpdate = onConfigUpdate,
+            onResetTimer = onResetTimer,
+            onClose = onClose
+        )
     }
 }
 
@@ -270,10 +274,13 @@ private fun ConfigurationTabContent(
     onUnlimitedChange: (Boolean) -> Unit,
     noRest: Boolean,
     onNoRestChange: (Boolean) -> Unit,
+    beginTime: String,
+    onBeginTimeChange: (String) -> Unit,
     adaptiveSpacing: Dp,
     adaptiveButtonHeight: Dp,
     config: TimerConfig,
     onConfigUpdate: (TimerConfig) -> Unit,
+    onResetTimer: () -> Unit,
     onClose: () -> Unit
 ) {
     Column {
@@ -284,7 +291,8 @@ private fun ConfigurationTabContent(
             label = { Text("Work Time (seconds)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
-            supportingText = { Text("5-900 seconds") }
+            supportingText = { Text("5-900 seconds") },
+            isError = workTime.toIntOrNull()?.let { it < 5 || it > 900 } ?: true
         )
 
         Spacer(modifier = Modifier.height(adaptiveSpacing))
@@ -323,7 +331,8 @@ private fun ConfigurationTabContent(
                 label = { Text("Rest Time (seconds)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
-                supportingText = { Text("5-300 seconds") }
+                supportingText = { Text("1-300 seconds") },
+                isError = restTime.toIntOrNull()?.let { it < 1 || it > 300 } ?: true
             )
 
             Spacer(modifier = Modifier.height(adaptiveSpacing))
@@ -356,45 +365,27 @@ private fun ConfigurationTabContent(
                 label = { Text("Number of Rounds") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
-                supportingText = { Text("1-99 rounds") }
+                supportingText = { Text("1-99 rounds") },
+                isError = rounds.toIntOrNull()?.let { it < 1 || it > 99 } ?: true
             )
 
             Spacer(modifier = Modifier.height(adaptiveSpacing * 2))
         }
 
+        Spacer(modifier = Modifier.height(adaptiveSpacing))
+
+        // Begin time input
+        OutlinedTextField(
+            value = beginTime,
+            onValueChange = onBeginTimeChange,
+            label = { Text("Begin Time (seconds)") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            supportingText = { Text("3-10 seconds") },
+            isError = beginTime.toIntOrNull()?.let { it < 3 || it > 10 } ?: true
+        )
+
         Spacer(modifier = Modifier.weight(1f))
-
-        // Save button
-        Button(
-            onClick = {
-                val workTimeInt = workTime.toIntOrNull() ?: config.workTimeSeconds
-                val restTimeInt = restTime.toIntOrNull() ?: config.restTimeSeconds
-                val roundsInt = rounds.toIntOrNull() ?: config.totalRounds
-
-                try {
-                    val newConfig = TimerConfig(
-                        workTimeSeconds = workTimeInt,
-                        restTimeSeconds = restTimeInt,
-                        totalRounds = roundsInt,
-                        isUnlimited = isUnlimited,
-                        noRest = noRest
-                    )
-                    onConfigUpdate(newConfig)
-                    onClose()
-                } catch (e: IllegalArgumentException) {
-                    // Handle validation errors - in a real app, show error message
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = adaptiveButtonHeight),
-            enabled = isValidConfiguration(workTime, restTime, rounds, isUnlimited, noRest)
-        ) {
-            Text(
-                text = "Save Configuration",
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
     }
 }
 
