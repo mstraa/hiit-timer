@@ -70,7 +70,7 @@ data class TimerStatus(
     val isRunning: Boolean get() = state == TimerState.RUNNING
     val isPaused: Boolean get() = state == TimerState.PAUSED
     val isFinished: Boolean get() = state == TimerState.FINISHED
-    val canStart: Boolean get() = state == TimerState.IDLE
+    val canStart: Boolean get() = state == TimerState.IDLE || state == TimerState.FINISHED
     val canPause: Boolean get() = state == TimerState.RUNNING
     val canResume: Boolean get() = state == TimerState.PAUSED
     val canReset: Boolean get() = state == TimerState.PAUSED || state == TimerState.FINISHED

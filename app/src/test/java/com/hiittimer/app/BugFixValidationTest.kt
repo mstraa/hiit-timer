@@ -48,7 +48,7 @@ class BugFixValidationTest {
 
         // Test FINISHED state - should show Start (new workout)
         val finishedStatus = idleStatus.copy(state = TimerState.FINISHED)
-        assertFalse("Should not be able to start when FINISHED", finishedStatus.canStart)
+        assertTrue("Should be able to start when FINISHED", finishedStatus.canStart)
         assertFalse("Should not be able to pause when FINISHED", finishedStatus.canPause)
         assertFalse("Should not be able to resume when FINISHED", finishedStatus.canResume)
         assertTrue("Should be able to reset when FINISHED", finishedStatus.canReset)

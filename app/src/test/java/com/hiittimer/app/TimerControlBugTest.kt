@@ -190,9 +190,9 @@ class TimerControlBugTest {
         assertTrue("Resume should be available when paused", pausedStatus.canResume)
         assertTrue("Reset should be available when paused", pausedStatus.canReset)
         
-        // FINISHED: Start=false, Pause=false, Resume=false, Reset=true
+        // FINISHED: Start=true, Pause=false, Resume=false, Reset=true
         val finishedStatus = TimerStatus(state = TimerState.FINISHED, config = config)
-        assertFalse("Start should not be available when finished", finishedStatus.canStart)
+        assertTrue("Start should be available when finished", finishedStatus.canStart)
         assertFalse("Pause should not be available when finished", finishedStatus.canPause)
         assertFalse("Resume should not be available when finished", finishedStatus.canResume)
         assertTrue("Reset should be available when finished", finishedStatus.canReset)

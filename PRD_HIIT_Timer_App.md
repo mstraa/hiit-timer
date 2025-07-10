@@ -1171,4 +1171,464 @@ This section documents critical bugs identified in the HIIT Timer app that requi
 
 ---
 
+## 13. Timer Button Behavior Debugging & Troubleshooting
+
+### 13.1 Overview
+This section provides comprehensive debugging guidance for timer control button behavior issues, focusing on the expected state transitions and common problems that may arise in the HIIT Timer app's button functionality.
+
+### 13.2 Expected Button Behavior Specification
+
+#### 13.2.1 Timer State Definitions
+The timer operates in four distinct states with specific button behavior requirements:
+
+**IDLE State (Initial/Reset)**
+- **Description**: Timer is not running and shows initial configuration time
+- **Primary Button**: Shows "Start" and is enabled
+- **Reset Button**: Disabled (no action needed when already at initial state)
+- **Valid Transitions**: IDLE → RUNNING (via Start button)
+
+**RUNNING State (Active Timer)**
+- **Description**: Timer is actively counting down
+- **Primary Button**: Shows "Pause" and is enabled
+- **Reset Button**: Disabled (prevents accidental reset during active workout)
+- **Valid Transitions**: RUNNING → PAUSED (via Pause button)
+
+**PAUSED State (Temporarily Stopped)**
+- **Description**: Timer is paused but retains current progress
+- **Primary Button**: Shows "Resume" and is enabled
+- **Reset Button**: Enabled (allows user to abandon current workout)
+- **Valid Transitions**: PAUSED → RUNNING (via Resume), PAUSED → IDLE (via Reset)
+
+**FINISHED State (Workout Complete)**
+- **Description**: All rounds completed successfully
+- **Primary Button**: Shows "Start" and is enabled (for new workout)
+- **Reset Button**: Enabled (allows return to initial state)
+- **Valid Transitions**: FINISHED → IDLE (via Reset), FINISHED → RUNNING (via Start new workout)
+
+#### 13.2.2 Button State Transition Matrix
+
+| Current State | Primary Button | Primary Action | Reset Button | Reset Action |
+|---------------|----------------|----------------|--------------|--------------|
+| IDLE          | "Start" (✓)    | → RUNNING      | Disabled (✗) | N/A          |
+| RUNNING       | "Pause" (✓)    | → PAUSED       | Disabled (✗) | N/A          |
+| PAUSED        | "Resume" (✓)   | → RUNNING      | Enabled (✓)  | → IDLE       |
+| FINISHED      | "Start" (✓)    | → RUNNING      | Enabled (✓)  | → IDLE       |
+
+### 13.3 Common Issues and Debugging Steps
+
+#### 13.3.1 Issue: Reset Button Enabled During RUNNING State
+
+**Symptoms:**
+- Reset button is clickable while timer is actively running
+- User can accidentally reset workout mid-session
+
+**Root Cause Analysis:**
+```kotlin
+// Check TimerStatus.canReset property in TimerState.kt
+val canReset: Boolean get() = state == TimerState.PAUSED || state == TimerState.FINISHED
+```
+
+**Debugging Steps:**
+1. **Verify State Logic**: Check `TimerStatus.canReset` implementation
+   ```bash
+   # Search for canReset usage
+   grep -r "canReset" app/src/main/java/
+   ```
+
+2. **Log Current State**: Add logging to verify timer state
+   ```kotlin
+   // In TimerScreen.kt TimerButton composable
+   Log.d("TimerButton", "Current state: ${timerStatus.state}, canReset: ${timerStatus.canReset}")
+   ```
+
+3. **UI State Verification**: Confirm button enabled state matches logic
+   ```kotlin
+   // In TimerButton composable for reset button
+   enabled = timerStatus.canReset, // Should be false when RUNNING
+   ```
+
+**Expected Fix Location:**
+- File: `app/src/main/java/com/hiittimer/app/data/TimerState.kt`
+- Property: `TimerStatus.canReset`
+- UI Implementation: `app/src/main/java/com/hiittimer/app/ui/timer/TimerScreen.kt`
+
+#### 13.3.2 Issue: Primary Button Shows Wrong Text/State
+
+**Symptoms:**
+- Button shows "Start" when it should show "Pause" or "Resume"
+- Button text doesn't match current timer state
+
+**Root Cause Analysis:**
+```kotlin
+// Check button text logic in TimerScreen.kt
+text = when {
+    timerStatus.canStart -> stringResource(R.string.start)
+    timerStatus.canPause -> stringResource(R.string.pause)
+    timerStatus.canResume -> stringResource(R.string.resume)
+    else -> stringResource(R.string.start)
+}
+```
+
+**Debugging Steps:**
+1. **State Property Verification**: Check boolean state properties
+   ```kotlin
+   Log.d("TimerButton", "canStart: ${timerStatus.canStart}, canPause: ${timerStatus.canPause}, canResume: ${timerStatus.canResume}")
+   ```
+
+2. **State Transition Logging**: Track state changes
+   ```kotlin
+   // In TimerManager.kt
+   Logger.Timer.start("State transition: ${_timerStatus.value.state} -> RUNNING")
+   ```
+
+3. **UI Synchronization Check**: Verify StateFlow updates reach UI
+   ```kotlin
+   // In TimerViewModel.kt
+   val timerStatus: StateFlow<TimerStatus> = combine(
+       serviceConnection.timerStatus,
+       fallbackTimerManager.timerStatus,
+       serviceConnection.isServiceConnected
+   ) { serviceStatus, fallbackStatus, isConnected ->
+       Log.d("TimerViewModel", "UI State update: ${if (isConnected) serviceStatus.state else fallbackStatus.state}")
+       if (isConnected) serviceStatus else fallbackStatus
+   }
+   ```
+
+**Expected Fix Locations:**
+- State Logic: `app/src/main/java/com/hiittimer/app/data/TimerState.kt`
+- UI Logic: `app/src/main/java/com/hiittimer/app/ui/timer/TimerScreen.kt`
+- State Management: `app/src/main/java/com/hiittimer/app/ui/timer/TimerViewModel.kt`
+
+#### 13.3.3 Issue: Button Clicks Not Responding
+
+**Symptoms:**
+- Button appears enabled but clicks don't trigger actions
+- State doesn't change when button is pressed
+
+**Debugging Steps:**
+1. **Click Handler Verification**: Check onClick implementation
+   ```kotlin
+   // In TimerButton composable
+   onClick = {
+       Log.d("TimerButton", "Button clicked - State: ${timerStatus.state}")
+       when {
+           timerStatus.canStart -> {
+               Log.d("TimerButton", "Calling startTimer()")
+               viewModel.startTimer()
+           }
+           timerStatus.canPause -> {
+               Log.d("TimerButton", "Calling pauseTimer()")
+               viewModel.pauseTimer()
+           }
+           timerStatus.canResume -> {
+               Log.d("TimerButton", "Calling resumeTimer()")
+               viewModel.resumeTimer()
+           }
+       }
+   }
+   ```
+
+2. **ViewModel Method Verification**: Ensure methods are called
+   ```kotlin
+   // In TimerViewModel.kt
+   fun startTimer() {
+       Log.d("TimerViewModel", "startTimer() called - canStart: ${timerStatus.value.canStart}")
+       if (timerStatus.value.canStart) {
+           // ... existing logic
+       }
+   }
+   ```
+
+3. **State Validation Check**: Verify state guards work correctly
+   ```kotlin
+   // In TimerManager.kt start() method
+   if (_timerStatus.value.state != TimerState.IDLE) {
+       Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION,
+           "Attempted to start timer in non-idle state: ${_timerStatus.value.state}")
+       return // This might be preventing state changes
+   }
+   ```
+
+### 13.4 Implementation Guidelines
+
+#### 13.4.1 Proper State Management
+
+**ViewModel State Synchronization:**
+```kotlin
+// Ensure proper state flow combination in TimerViewModel.kt
+val timerStatus: StateFlow<TimerStatus> = combine(
+    serviceConnection.timerStatus,
+    fallbackTimerManager.timerStatus,
+    serviceConnection.isServiceConnected
+) { serviceStatus, fallbackStatus, isConnected ->
+    // Always prefer fallback for UI consistency
+    if (isConnected) serviceStatus else fallbackStatus
+}.stateIn(
+    scope = viewModelScope,
+    started = SharingStarted.Eagerly,
+    initialValue = TimerStatus.createDefault()
+)
+```
+
+**State Transition Validation:**
+```kotlin
+// In TimerManager.kt - Add comprehensive state validation
+private fun validateStateTransition(from: TimerState, to: TimerState): Boolean {
+    return when (from) {
+        TimerState.IDLE -> to == TimerState.RUNNING
+        TimerState.RUNNING -> to == TimerState.PAUSED || to == TimerState.FINISHED
+        TimerState.PAUSED -> to == TimerState.RUNNING || to == TimerState.IDLE
+        TimerState.FINISHED -> to == TimerState.IDLE || to == TimerState.RUNNING
+    }
+}
+```
+
+#### 13.4.2 Button Enabling/Disabling Logic
+
+**Centralized Button State Logic:**
+```kotlin
+// In TimerStatus data class - ensure consistent state properties
+val canStart: Boolean get() = state == TimerState.IDLE || state == TimerState.FINISHED
+val canPause: Boolean get() = state == TimerState.RUNNING
+val canResume: Boolean get() = state == TimerState.PAUSED
+val canReset: Boolean get() = state == TimerState.PAUSED || state == TimerState.FINISHED
+```
+
+**UI Button Implementation:**
+```kotlin
+// In TimerScreen.kt - ensure proper enabled state binding
+Button(
+    onClick = { /* action */ },
+    enabled = when {
+        isPrimary -> timerStatus.canStart || timerStatus.canPause || timerStatus.canResume
+        else -> timerStatus.canReset
+    }
+)
+```
+
+#### 13.4.3 Event Handling Best Practices
+
+**Defensive Programming:**
+```kotlin
+// In TimerViewModel.kt - add state validation to all methods
+fun startTimer() {
+    if (!timerStatus.value.canStart) {
+        Log.w("TimerViewModel", "startTimer() called but canStart is false")
+        return
+    }
+    // ... proceed with start logic
+}
+
+fun pauseTimer() {
+    if (!timerStatus.value.canPause) {
+        Log.w("TimerViewModel", "pauseTimer() called but canPause is false")
+        return
+    }
+    // ... proceed with pause logic
+}
+```
+
+### 13.5 Testing Procedures
+
+#### 13.5.1 Manual Testing Checklist
+
+**State Transition Testing:**
+1. **IDLE → RUNNING**:
+   - ✓ Start button shows "Start" and is enabled
+   - ✓ Reset button is disabled
+   - ✓ Click Start → button changes to "Pause", reset stays disabled
+
+2. **RUNNING → PAUSED**:
+   - ✓ Primary button shows "Pause" and is enabled
+   - ✓ Reset button is disabled
+   - ✓ Click Pause → button changes to "Resume", reset becomes enabled
+
+3. **PAUSED → RUNNING**:
+   - ✓ Primary button shows "Resume" and is enabled
+   - ✓ Reset button is enabled
+   - ✓ Click Resume → button changes to "Pause", reset becomes disabled
+
+4. **PAUSED → IDLE**:
+   - ✓ Reset button is enabled when paused
+   - ✓ Click Reset → primary button shows "Start", reset becomes disabled
+
+5. **FINISHED → IDLE**:
+   - ✓ Both buttons enabled when workout completes
+   - ✓ Reset returns to initial state correctly
+
+#### 13.5.2 Automated Test Cases
+
+**Unit Tests for Button State Logic:**
+```kotlin
+// In ButtonBehaviorTest.kt
+@Test
+fun `verify button states for all timer states`() {
+    val config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 10, totalRounds = 5)
+
+    // Test IDLE state
+    val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
+    assertTrue("Start should be enabled in IDLE", idleStatus.canStart)
+    assertFalse("Reset should be disabled in IDLE", idleStatus.canReset)
+
+    // Test RUNNING state
+    val runningStatus = TimerStatus(state = TimerState.RUNNING, config = config)
+    assertTrue("Pause should be enabled in RUNNING", runningStatus.canPause)
+    assertFalse("Reset should be disabled in RUNNING", runningStatus.canReset)
+
+    // Test PAUSED state
+    val pausedStatus = TimerStatus(state = TimerState.PAUSED, config = config)
+    assertTrue("Resume should be enabled in PAUSED", pausedStatus.canResume)
+    assertTrue("Reset should be enabled in PAUSED", pausedStatus.canReset)
+
+    // Test FINISHED state
+    val finishedStatus = TimerStatus(state = TimerState.FINISHED, config = config)
+    assertTrue("Start should be enabled in FINISHED", finishedStatus.canStart)
+    assertTrue("Reset should be enabled in FINISHED", finishedStatus.canReset)
+}
+```
+
+**Integration Tests for State Transitions:**
+```kotlin
+@Test
+fun `verify complete state transition cycle`() {
+    val viewModel = TimerViewModel(/* dependencies */)
+
+    // Start from IDLE
+    assertEquals(TimerState.IDLE, viewModel.timerStatus.value.state)
+    assertTrue(viewModel.timerStatus.value.canStart)
+
+    // Start timer
+    viewModel.startTimer()
+    assertEquals(TimerState.RUNNING, viewModel.timerStatus.value.state)
+    assertTrue(viewModel.timerStatus.value.canPause)
+
+    // Pause timer
+    viewModel.pauseTimer()
+    assertEquals(TimerState.PAUSED, viewModel.timerStatus.value.state)
+    assertTrue(viewModel.timerStatus.value.canResume)
+    assertTrue(viewModel.timerStatus.value.canReset)
+
+    // Reset timer
+    viewModel.resetTimer()
+    assertEquals(TimerState.IDLE, viewModel.timerStatus.value.state)
+    assertTrue(viewModel.timerStatus.value.canStart)
+    assertFalse(viewModel.timerStatus.value.canReset)
+}
+```
+
+### 13.6 Debugging Tools and Techniques
+
+#### 13.6.1 Logging Strategy
+
+**Comprehensive State Logging:**
+```kotlin
+// Add to TimerManager.kt for state change tracking
+private fun logStateChange(from: TimerState, to: TimerState, reason: String) {
+    Logger.Timer.i("State transition: $from -> $to ($reason)")
+}
+
+// Add to TimerViewModel.kt for UI state tracking
+init {
+    timerStatus.onEach { status ->
+        Log.d("TimerViewModel", "UI State: ${status.state}, canStart: ${status.canStart}, canPause: ${status.canPause}, canResume: ${status.canResume}, canReset: ${status.canReset}")
+    }.launchIn(viewModelScope)
+}
+```
+
+**Button Interaction Logging:**
+```kotlin
+// Add to TimerScreen.kt for click tracking
+onClick = {
+    Log.d("TimerButton", "Button clicked - Type: ${if (isPrimary) "Primary" else "Reset"}, State: ${timerStatus.state}")
+    // ... existing click logic
+}
+```
+
+#### 13.6.2 Debug Build Configuration
+
+**Enable Debug Logging:**
+```kotlin
+// In Logger.kt - ensure debug builds show all logs
+object Logger {
+    private val isDebugBuild = BuildConfig.DEBUG
+
+    fun d(tag: String, message: String) {
+        if (isDebugBuild) {
+            Log.d(tag, message)
+        }
+    }
+}
+```
+
+### 13.7 Performance Considerations
+
+#### 13.7.1 State Update Optimization
+
+**Avoid Unnecessary Recompositions:**
+```kotlin
+// In TimerScreen.kt - use remember for stable references
+@Composable
+private fun TimerButton(
+    timerStatus: TimerStatus,
+    viewModel: TimerViewModel,
+    isPrimary: Boolean
+) {
+    val buttonState by remember(timerStatus.state) {
+        derivedStateOf {
+            when {
+                isPrimary && timerStatus.canStart -> ButtonState.START
+                isPrimary && timerStatus.canPause -> ButtonState.PAUSE
+                isPrimary && timerStatus.canResume -> ButtonState.RESUME
+                !isPrimary -> ButtonState.RESET
+                else -> ButtonState.DISABLED
+            }
+        }
+    }
+}
+```
+
+#### 13.7.2 Memory Leak Prevention
+
+**Proper StateFlow Management:**
+```kotlin
+// In TimerViewModel.kt - ensure proper cleanup
+override fun onCleared() {
+    super.onCleared()
+    // Cancel any ongoing coroutines
+    viewModelScope.cancel()
+}
+```
+
+### 13.8 Troubleshooting Quick Reference
+
+#### 13.8.1 Common Symptoms and Solutions
+
+| Symptom | Likely Cause | Quick Fix |
+|---------|--------------|-----------|
+| Reset enabled during workout | `canReset` logic error | Check `TimerState.kt` line 76 |
+| Button shows wrong text | State property mismatch | Verify `canStart/canPause/canResume` logic |
+| Clicks don't work | State validation blocking | Add logging to ViewModel methods |
+| UI not updating | StateFlow not emitting | Check `combine` operator in ViewModel |
+| Inconsistent behavior | Service/fallback sync issue | Verify state synchronization logic |
+
+#### 13.8.2 Emergency Debugging Commands
+
+**ADB Logging:**
+```bash
+# Filter timer-related logs
+adb logcat | grep -E "(TimerButton|TimerViewModel|TimerManager|TimerState)"
+
+# Clear logs and start fresh
+adb logcat -c && adb logcat | grep Timer
+```
+
+**Build and Test:**
+```bash
+# Clean build with logging
+./gradlew clean assembleDebug
+./gradlew test --tests="*ButtonBehavior*"
+```
+
+---
+
 *End of Document*
