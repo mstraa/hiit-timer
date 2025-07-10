@@ -27,7 +27,7 @@ class TimerManagerTest {
     fun `timer status has correct initial state`() {
         val status = TimerStatus()
 
-        assertEquals(TimerState.IDLE, status.state)
+        assertEquals(TimerState.STOPPED, status.state)
         assertEquals(IntervalType.WORK, status.currentInterval)
         assertEquals(0, status.timeRemainingSeconds)
         assertEquals(0, status.timeRemainingMilliseconds)

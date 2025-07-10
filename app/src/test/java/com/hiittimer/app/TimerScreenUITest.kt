@@ -17,7 +17,7 @@ class TimerScreenUITest {
     fun `timer status provides correct state information for UI`() {
         // Test initial idle state
         val idleStatus = TimerStatus()
-        assertEquals(TimerState.IDLE, idleStatus.state)
+        assertEquals(TimerState.STOPPED, idleStatus.state)
         assertEquals(IntervalType.WORK, idleStatus.currentInterval)
         assertTrue(idleStatus.canStart)
         assertFalse(idleStatus.canPause)

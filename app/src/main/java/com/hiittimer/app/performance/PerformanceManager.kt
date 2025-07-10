@@ -173,6 +173,7 @@ class PerformanceManager(private val context: Context) {
     /**
      * Optimize coroutine dispatcher based on performance
      */
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun getOptimalDispatcher(): CoroutineDispatcher {
         return if (shouldLimitBackgroundProcessing()) {
             // Use single thread dispatcher to reduce CPU usage

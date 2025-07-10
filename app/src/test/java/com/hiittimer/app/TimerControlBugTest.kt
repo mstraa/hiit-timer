@@ -36,7 +36,7 @@ class TimerControlBugTest {
         
         // After reset - should return to idle with preserved config
         val resetStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = config.workTimeSeconds,
             timeRemainingMilliseconds = 0,
@@ -45,7 +45,7 @@ class TimerControlBugTest {
         )
         
         // Verify reset worked correctly
-        assertEquals(TimerState.IDLE, resetStatus.state)
+        assertEquals(TimerState.STOPPED, resetStatus.state)
         assertEquals(config.workTimeSeconds, resetStatus.timeRemainingSeconds)
         assertEquals(config, resetStatus.config)
         assertFalse("Reset button should be disabled after reset", resetStatus.canReset) // Section 12 requirement
@@ -135,7 +135,7 @@ class TimerControlBugTest {
         val config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 10, totalRounds = 5)
         
         // IDLE state - reset should be disabled (per Section 12 requirements)
-        val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
+        val idleStatus = TimerStatus(state = TimerState.STOPPED, config = config)
         assertFalse("Reset should be disabled when idle", idleStatus.canReset)
         
         // RUNNING state - reset should be disabled (per requirements)
@@ -164,7 +164,7 @@ class TimerControlBugTest {
         val config = TimerConfig(workTimeSeconds = 20, restTimeSeconds = 10, totalRounds = 3)
         
         // IDLE: Start=true, Pause=false, Resume=false, Reset=false
-        val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
+        val idleStatus = TimerStatus(state = TimerState.STOPPED, config = config)
         assertTrue("Start should be available when idle", idleStatus.canStart)
         assertFalse("Pause should not be available when idle", idleStatus.canPause)
         assertFalse("Resume should not be available when idle", idleStatus.canResume)
@@ -211,7 +211,7 @@ class TimerControlBugTest {
         
         // Start with custom config
         val idleStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             timeRemainingSeconds = customConfig.workTimeSeconds,
             config = customConfig
         )
@@ -230,7 +230,7 @@ class TimerControlBugTest {
         
         // After reset
         val resetStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = customConfig.workTimeSeconds,
             timeRemainingMilliseconds = 0,
@@ -248,7 +248,7 @@ class TimerControlBugTest {
         // Flow: IDLE → RUNNING → PAUSED → RUNNING → PAUSED → IDLE (reset)
         
         // 1. IDLE → RUNNING (start)
-        val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
+        val idleStatus = TimerStatus(state = TimerState.STOPPED, config = config)
         assertTrue("Should be able to start from IDLE", idleStatus.canStart)
         
         // 2. RUNNING → PAUSED (pause)
@@ -269,7 +269,7 @@ class TimerControlBugTest {
         
         // Final state should be IDLE with preserved config
         val finalIdleStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             timeRemainingSeconds = config.workTimeSeconds,
             config = config
         )

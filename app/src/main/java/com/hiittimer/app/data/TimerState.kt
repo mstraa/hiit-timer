@@ -6,9 +6,10 @@ import java.io.Serializable
  * Represents the current state of the timer
  */
 enum class TimerState {
-    IDLE,       // Timer is not running and at initial state
+    STOPPED,    // Timer is not running and at initial config state
+    BEGIN,      // Timer is in countdown before starting first round
     RUNNING,    // Timer is actively counting down
-    PAUSED,     // Timer is paused but can be resumed
+    PAUSED,     // Timer is paused but can be resumed from current position
     FINISHED    // Timer has completed all rounds
 }
 
@@ -28,12 +29,14 @@ data class TimerConfig(
     val restTimeSeconds: Int = 10,
     val totalRounds: Int = 5,
     val isUnlimited: Boolean = false,
-    val noRest: Boolean = false // FR-001: "No Rest" toggle to disable rest periods
+    val noRest: Boolean = false, // FR-001: "No Rest" toggle to disable rest periods
+    val countdownDurationSeconds: Int = 5 // Duration of BEGIN state countdown
 ) : Serializable {
     init {
         require(workTimeSeconds in 5..900) { "Work time must be between 5 and 900 seconds" }
         require(noRest || restTimeSeconds in 5..300) { "Rest time must be between 5 and 300 seconds when rest is enabled" }
         require(totalRounds in 1..99 || isUnlimited) { "Total rounds must be between 1 and 99 or unlimited" }
+        require(countdownDurationSeconds in 3..10) { "Countdown duration must be between 3 and 10 seconds" }
     }
 }
 
@@ -41,12 +44,14 @@ data class TimerConfig(
  * Data class representing the current timer status
  */
 data class TimerStatus(
-    val state: TimerState = TimerState.IDLE,
+    val state: TimerState = TimerState.STOPPED,
     val currentInterval: IntervalType = IntervalType.WORK,
     val timeRemainingSeconds: Int = 0,
     val timeRemainingMilliseconds: Int = 0, // FR-017: Millisecond precision
     val currentRound: Int = 1,
-    val config: TimerConfig = TimerConfig()
+    val config: TimerConfig = TimerConfig(),
+    val countdownText: String? = null, // Text to display during BEGIN countdown (e.g., "Start in 3", "GO!")
+    val shouldFlashBlue: Boolean = false // Trigger for blue flash effect during countdown
 ) {
     companion object {
         /**
@@ -56,12 +61,14 @@ data class TimerStatus(
         fun createDefault(): TimerStatus {
             val defaultConfig = TimerConfig()
             return TimerStatus(
-                state = TimerState.IDLE,
+                state = TimerState.STOPPED,
                 currentInterval = IntervalType.WORK,
                 timeRemainingSeconds = defaultConfig.workTimeSeconds,
                 timeRemainingMilliseconds = 0,
                 currentRound = 1,
-                config = defaultConfig
+                config = defaultConfig,
+                countdownText = null,
+                shouldFlashBlue = false
             )
         }
     }
@@ -70,10 +77,11 @@ data class TimerStatus(
     val isRunning: Boolean get() = state == TimerState.RUNNING
     val isPaused: Boolean get() = state == TimerState.PAUSED
     val isFinished: Boolean get() = state == TimerState.FINISHED
-    val canStart: Boolean get() = state == TimerState.IDLE || state == TimerState.FINISHED
+    val isBegin: Boolean get() = state == TimerState.BEGIN
+    val canStart: Boolean get() = state == TimerState.STOPPED || state == TimerState.FINISHED
     val canPause: Boolean get() = state == TimerState.RUNNING
     val canResume: Boolean get() = state == TimerState.PAUSED
-    val canReset: Boolean get() = state == TimerState.PAUSED || state == TimerState.FINISHED
+    val canReset: Boolean get() = state != TimerState.STOPPED // Can reset from any state except STOPPED
     
     /**
      * Format time remaining with conditional formatting (FR-019: Timer Display Format Enhancement)
@@ -129,4 +137,20 @@ data class TimerStatus(
      */
     val shouldShowNextIntervalPreview: Boolean
         get() = state == TimerState.RUNNING && timeRemainingSeconds <= 5
+
+    /**
+     * Get countdown display text for BEGIN state
+     */
+    fun getCountdownDisplayText(): String? {
+        return when (state) {
+            TimerState.BEGIN -> {
+                if (timeRemainingSeconds > 0) {
+                    "Start in $timeRemainingSeconds"
+                } else {
+                    "GO!"
+                }
+            }
+            else -> null
+        }
+    }
 }

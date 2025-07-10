@@ -24,8 +24,9 @@ class WakeLockManager(private val context: Context) {
     fun acquireWakeLock() {
         try {
             if (wakeLock?.isHeld != true) {
+                @Suppress("DEPRECATION")
                 wakeLock = powerManager.newWakeLock(
-                    PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE,
                     WAKE_LOCK_TAG
                 ).apply {
                     acquire(10 * 60 * 1000L) // 10 minutes timeout for safety

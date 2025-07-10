@@ -15,22 +15,21 @@ import com.hiittimer.app.ui.theme.HIITColors
 
 /**
  * Refined visual feedback overlay (FR-024: Refined Visual Feedback)
- * Removed continuous color changes, keeping only flash effects at interval transitions
- * No background color changes during active timing for clean, minimal visual feedback
+ * This function is intentionally empty as continuous color changes were removed
+ * Visual feedback is now handled by IntervalTransitionEffect only
  */
 @Composable
 fun VisualFeedbackOverlay(
-    timerStatus: TimerStatus,
-    modifier: Modifier = Modifier
+    @Suppress("UNUSED_PARAMETER") timerStatus: TimerStatus,
+    @Suppress("UNUSED_PARAMETER") modifier: Modifier = Modifier
 ) {
-    // FR-024: Remove continuous light color changes during timer operation
-    // This component now only handles flash effects at interval transitions
-    // No continuous background color changes or pulsing animations
+    // FR-024: Intentionally empty - visual feedback moved to IntervalTransitionEffect
 }
 
 /**
- * Enhanced flash effects for interval transitions (FR-024: Refined Visual Feedback)
+ * Enhanced flash effects for interval transitions and BEGIN countdown (FR-024: Refined Visual Feedback)
  * Big flash at work interval start (green) and rest interval start (red)
+ * Blue flash during BEGIN countdown
  * Clean, minimal visual feedback during countdown
  */
 @Composable
@@ -42,41 +41,66 @@ fun IntervalTransitionEffect(
 
     // Track interval changes for flash effects
     var previousInterval by remember { mutableStateOf(timerStatus.currentInterval) }
-    var showFlash by remember { mutableStateOf(false) }
+    var showIntervalFlash by remember { mutableStateOf(false) }
+
+    // Track BEGIN countdown flash
+    var showCountdownFlash by remember { mutableStateOf(false) }
 
     // Detect interval changes and trigger flash effect (FR-024)
     LaunchedEffect(timerStatus.currentInterval, timerStatus.state) {
         if (previousInterval != timerStatus.currentInterval && timerStatus.state == TimerState.RUNNING) {
-            showFlash = true
+            showIntervalFlash = true
             previousInterval = timerStatus.currentInterval
             // Big flash duration - longer and more prominent
             kotlinx.coroutines.delay(600) // Increased from 300ms for bigger flash effect
-            showFlash = false
+            showIntervalFlash = false
+        }
+    }
+
+    // Handle BEGIN countdown blue flash
+    LaunchedEffect(timerStatus.shouldFlashBlue) {
+        if (timerStatus.shouldFlashBlue && timerStatus.state == TimerState.BEGIN) {
+            showCountdownFlash = true
+            kotlinx.coroutines.delay(400) // Shorter flash for countdown
+            showCountdownFlash = false
         }
     }
 
     // Big flash animation with enhanced visibility
-    val flashAlpha by animateFloatAsState(
-        targetValue = if (showFlash) 0.8f else 0f, // Increased from 0.5f for bigger flash
+    val intervalFlashAlpha by animateFloatAsState(
+        targetValue = if (showIntervalFlash) 0.8f else 0f, // Increased from 0.5f for bigger flash
         animationSpec = tween(
             durationMillis = 600, // Longer duration for more prominent flash
             easing = FastOutSlowInEasing
         ),
-        label = "flash_alpha"
+        label = "interval_flash_alpha"
     )
 
-    // Flash color based on interval type (FR-024: Green for work, Red for rest)
-    val flashColor = when (timerStatus.currentInterval) {
-        IntervalType.WORK -> if (isDarkTheme) HIITColors.WorkIndicatorDark else HIITColors.WorkIndicatorLight
-        IntervalType.REST -> if (isDarkTheme) HIITColors.RestIndicatorDark else HIITColors.RestIndicatorLight
+    // Countdown flash animation
+    val countdownFlashAlpha by animateFloatAsState(
+        targetValue = if (showCountdownFlash) 0.6f else 0f,
+        animationSpec = tween(
+            durationMillis = 400,
+            easing = FastOutSlowInEasing
+        ),
+        label = "countdown_flash_alpha"
+    )
+
+    // Flash color based on state and interval type
+    val flashColor = when {
+        timerStatus.state == TimerState.BEGIN -> Color.Blue // Blue flash for countdown
+        timerStatus.currentInterval == IntervalType.WORK -> if (isDarkTheme) HIITColors.WorkIndicatorDark else HIITColors.WorkIndicatorLight
+        timerStatus.currentInterval == IntervalType.REST -> if (isDarkTheme) HIITColors.RestIndicatorDark else HIITColors.RestIndicatorLight
+        else -> Color.Transparent
     }
 
-    // Render big flash effect only at interval transitions
-    if (flashAlpha > 0f) {
+    // Render flash effects
+    val totalAlpha = maxOf(intervalFlashAlpha, countdownFlashAlpha)
+    if (totalAlpha > 0f) {
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(flashColor.copy(alpha = flashAlpha))
+                .background(flashColor.copy(alpha = totalAlpha))
         )
     }
 }

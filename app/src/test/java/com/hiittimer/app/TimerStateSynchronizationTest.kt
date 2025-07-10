@@ -18,7 +18,7 @@ class TimerStateSynchronizationTest {
         
         // Test IDLE state properties
         val idleStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             timeRemainingSeconds = config.workTimeSeconds,
             config = config
         )
@@ -62,7 +62,7 @@ class TimerStateSynchronizationTest {
         val config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 10, totalRounds = 5)
         
         // Test button text for IDLE state
-        val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
+        val idleStatus = TimerStatus(state = TimerState.STOPPED, config = config)
         val idleButtonText = getButtonText(idleStatus)
         assertEquals("IDLE state should show Start button", "Start", idleButtonText)
         
@@ -94,7 +94,7 @@ class TimerStateSynchronizationTest {
         val config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 10, totalRounds = 5)
         
         // Start with IDLE
-        val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
+        val idleStatus = TimerStatus(state = TimerState.STOPPED, config = config)
         assertEquals("Start", getButtonText(idleStatus))
         assertTrue("Should be able to start from IDLE", idleStatus.canStart)
         
@@ -119,7 +119,7 @@ class TimerStateSynchronizationTest {
         val config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 10, totalRounds = 5)
         
         // IDLE state - reset should be disabled (per Section 12 requirements)
-        val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
+        val idleStatus = TimerStatus(state = TimerState.STOPPED, config = config)
         assertFalse("Reset should be disabled when IDLE", idleStatus.canReset)
         
         // RUNNING state - reset should be disabled

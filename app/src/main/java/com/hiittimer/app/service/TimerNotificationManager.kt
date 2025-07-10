@@ -55,7 +55,7 @@ class TimerNotificationManager(
     /**
      * Create timer notification with current status and controls
      */
-    fun createTimerNotification(timerStatus: TimerStatus, isRunning: Boolean): Notification {
+    fun createTimerNotification(timerStatus: TimerStatus, @Suppress("UNUSED_PARAMETER") isRunning: Boolean): Notification {
         val contentIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -85,7 +85,7 @@ class TimerNotificationManager(
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         // Add action buttons based on timer state
-        addNotificationActions(builder, timerStatus, isRunning)
+        addNotificationActions(builder, timerStatus)
 
         return builder.build()
     }
@@ -95,13 +95,14 @@ class TimerNotificationManager(
      */
     private fun getNotificationTitle(timerStatus: TimerStatus): String {
         return when (timerStatus.state) {
+            TimerState.BEGIN -> "Starting Workout..."
             TimerState.RUNNING -> {
                 val intervalText = if (timerStatus.currentInterval == IntervalType.WORK) "Work" else "Rest"
                 "$intervalText - Round ${timerStatus.currentRound}"
             }
             TimerState.PAUSED -> "Timer Paused"
             TimerState.FINISHED -> "Workout Complete!"
-            TimerState.IDLE -> "HIIT Timer"
+            TimerState.STOPPED -> "HIIT Timer"
         }
     }
 
@@ -110,8 +111,11 @@ class TimerNotificationManager(
      */
     private fun getNotificationContent(timerStatus: TimerStatus): String {
         return when (timerStatus.state) {
+            TimerState.BEGIN -> {
+                timerStatus.countdownText ?: "Get ready to start!"
+            }
             TimerState.RUNNING, TimerState.PAUSED -> {
-                val timeText = formatTime(timerStatus.timeRemainingSeconds, timerStatus.timeRemainingMilliseconds)
+                val timeText = formatTime(timerStatus.timeRemainingSeconds)
                 val roundText = if (timerStatus.config.isUnlimited) {
                     "Round ${timerStatus.currentRound}"
                 } else {
@@ -120,7 +124,7 @@ class TimerNotificationManager(
                 "$timeText remaining • $roundText"
             }
             TimerState.FINISHED -> "Great job! Workout completed successfully."
-            TimerState.IDLE -> "Ready to start your workout"
+            TimerState.STOPPED -> "Ready to start your workout"
         }
     }
 
@@ -129,10 +133,12 @@ class TimerNotificationManager(
      */
     private fun addNotificationActions(
         builder: NotificationCompat.Builder,
-        timerStatus: TimerStatus,
-        isRunning: Boolean
+        timerStatus: TimerStatus
     ) {
         when (timerStatus.state) {
+            TimerState.BEGIN -> {
+                // No actions during countdown - user should wait
+            }
             TimerState.RUNNING -> {
                 // Add pause action
                 val pauseIntent = Intent(context, TimerService::class.java).apply {
@@ -206,7 +212,7 @@ class TimerNotificationManager(
                     resetPendingIntent
                 )
             }
-            TimerState.IDLE -> {
+            TimerState.STOPPED -> {
                 // No actions for idle state
             }
         }
@@ -215,10 +221,9 @@ class TimerNotificationManager(
     /**
      * Format time for notification display
      */
-    private fun formatTime(seconds: Int, milliseconds: Int): String {
-        val totalSeconds = seconds
-        val minutes = totalSeconds / 60
-        val remainingSeconds = totalSeconds % 60
+    private fun formatTime(seconds: Int): String {
+        val minutes = seconds / 60
+        val remainingSeconds = seconds % 60
         return if (minutes > 0) {
             "${minutes}:${remainingSeconds.toString().padStart(2, '0')}"
         } else {

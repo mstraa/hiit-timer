@@ -56,9 +56,6 @@ fun HIITTimerApp() {
             composable("timer") {
                 TimerScreen(
                     viewModel = timerViewModel,
-                    onNavigateToConfig = {
-                        navController.navigate("config")
-                    },
                     onNavigateToHistory = {
                         navController.navigate("history")
                     }

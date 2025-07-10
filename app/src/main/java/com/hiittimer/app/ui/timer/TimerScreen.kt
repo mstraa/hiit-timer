@@ -45,7 +45,6 @@ import com.hiittimer.app.error.ErrorHandler
 @Composable
 fun TimerScreen(
     viewModel: TimerViewModel = viewModel(),
-    onNavigateToConfig: () -> Unit = {},
     onNavigateToHistory: () -> Unit = {}
 ) {
     val timerStatus by viewModel.timerStatus.collectAsState()
@@ -65,7 +64,6 @@ fun TimerScreen(
     )
 
     // Responsive design values (FR-015: Responsive Design)
-    val screenSize = getScreenSize()
     val isLandscapeMode = isLandscape()
     val adaptivePadding = getAdaptivePadding()
     val adaptiveSpacing = getAdaptiveSpacing()
@@ -94,7 +92,6 @@ fun TimerScreen(
             if (isLandscapeMode) {
                 LandscapeTimerLayout(
                     timerStatus = timerStatus,
-                    audioSettings = audioSettings,
                     intervalColor = intervalColor,
                     adaptivePadding = adaptivePadding,
                     adaptiveSpacing = adaptiveSpacing,
@@ -107,7 +104,6 @@ fun TimerScreen(
             } else {
                 PortraitTimerLayout(
                     timerStatus = timerStatus,
-                    audioSettings = audioSettings,
                     intervalColor = intervalColor,
                     adaptivePadding = adaptivePadding,
                     adaptiveSpacing = adaptiveSpacing,
@@ -176,7 +172,6 @@ fun TimerScreen(
 @Composable
 private fun PortraitTimerLayout(
     timerStatus: TimerStatus,
-    audioSettings: AudioSettings,
     intervalColor: Color,
     adaptivePadding: Dp,
     adaptiveSpacing: Dp,
@@ -195,9 +190,7 @@ private fun PortraitTimerLayout(
     ) {
         // Header with settings and audio controls
         TimerHeader(
-            audioSettings = audioSettings,
             adaptiveSpacing = adaptiveSpacing,
-            viewModel = viewModel,
             onOpenHamburgerMenu = onOpenHamburgerMenu,
             onOpenTimerConfig = onOpenTimerConfig
         )
@@ -235,7 +228,6 @@ private fun PortraitTimerLayout(
 @Composable
 private fun LandscapeTimerLayout(
     timerStatus: TimerStatus,
-    audioSettings: AudioSettings,
     intervalColor: Color,
     adaptivePadding: Dp,
     adaptiveSpacing: Dp,
@@ -253,9 +245,7 @@ private fun LandscapeTimerLayout(
     ) {
         // Header (compact in landscape)
         TimerHeader(
-            audioSettings = audioSettings,
             adaptiveSpacing = adaptiveSpacing,
-            viewModel = viewModel,
             onOpenHamburgerMenu = onOpenHamburgerMenu,
             onOpenTimerConfig = onOpenTimerConfig,
             isCompact = true
@@ -309,9 +299,7 @@ private fun LandscapeTimerLayout(
  */
 @Composable
 private fun TimerHeader(
-    audioSettings: AudioSettings,
     adaptiveSpacing: Dp,
-    viewModel: TimerViewModel,
     onOpenHamburgerMenu: () -> Unit,
     onOpenTimerConfig: () -> Unit,
     isCompact: Boolean = false
@@ -417,20 +405,30 @@ private fun TimerDisplay(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Interval type indicator
+        // Interval type indicator with special handling for BEGIN countdown
         Card(
             modifier = Modifier.padding(bottom = adaptiveSpacing * 2),
-            colors = CardDefaults.cardColors(containerColor = intervalColor.copy(alpha = 0.1f))
+            colors = CardDefaults.cardColors(
+                containerColor = if (timerStatus.isBegin) {
+                    Color.Blue.copy(alpha = 0.1f)
+                } else {
+                    intervalColor.copy(alpha = 0.1f)
+                }
+            )
         ) {
             Text(
-                text = if (timerStatus.isWorkInterval) {
-                    stringResource(R.string.work)
-                } else {
-                    stringResource(R.string.rest)
+                text = when {
+                    timerStatus.isBegin -> timerStatus.getCountdownDisplayText() ?: "BEGIN"
+                    timerStatus.isWorkInterval -> stringResource(R.string.work)
+                    else -> stringResource(R.string.rest)
                 },
                 modifier = Modifier.padding(horizontal = adaptiveSpacing * 2, vertical = adaptiveSpacing),
                 style = MaterialTheme.typography.headlineMedium,
-                color = intervalColor,
+                color = if (timerStatus.isBegin) {
+                    Color.Blue
+                } else {
+                    intervalColor
+                },
                 fontWeight = FontWeight.Bold
             )
         }
@@ -577,13 +575,18 @@ private fun TimerButton(
                 .widthIn(min = MinTouchTargetSize * 2),
             shape = RoundedCornerShape(adaptiveButtonHeight / 2)
         ) {
+            val buttonText = when {
+                timerStatus.canStart -> stringResource(R.string.start)
+                timerStatus.canPause -> stringResource(R.string.pause)
+                timerStatus.canResume -> stringResource(R.string.resume)
+                else -> stringResource(R.string.start)
+            }
+            // Debug logging for button text and state transitions
+            LaunchedEffect(timerStatus.state, timerStatus.canStart, timerStatus.canPause, timerStatus.canResume) {
+                Logger.d(ErrorHandler.ErrorCategory.USER_INPUT, "Timer button state: ${timerStatus.state}, canStart=${timerStatus.canStart}, canPause=${timerStatus.canPause}, canResume=${timerStatus.canResume}, text='$buttonText'")
+            }
             Text(
-                text = when {
-                    timerStatus.canStart -> stringResource(R.string.start)
-                    timerStatus.canPause -> stringResource(R.string.pause)
-                    timerStatus.canResume -> stringResource(R.string.resume)
-                    else -> stringResource(R.string.start)
-                },
+                text = buttonText,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )

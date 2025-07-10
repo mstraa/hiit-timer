@@ -18,7 +18,7 @@ class ButtonBehaviorTest {
         
         // Test STOPPED/IDLE state
         val stoppedStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             timeRemainingSeconds = config.workTimeSeconds,
             config = config
         )
@@ -102,7 +102,7 @@ class ButtonBehaviorTest {
         
         // After reset, should return to IDLE
         val afterResetStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = config.workTimeSeconds,
             currentRound = 1,

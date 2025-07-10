@@ -54,7 +54,7 @@ class UIBugFixTest {
     fun `bug 1 - reset button should be available when timer is idle`() {
         // Test that reset button is available in idle state (per user requirements)
         val idleStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = 30,
             timeRemainingMilliseconds = 0,
@@ -146,7 +146,7 @@ class UIBugFixTest {
         val config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 10, totalRounds = 5)
         
         // Test IDLE state - start should be available
-        val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
+        val idleStatus = TimerStatus(state = TimerState.STOPPED, config = config)
         assertTrue("Start should be available from IDLE state", idleStatus.canStart)
         assertFalse("Resume should not be available from IDLE state", idleStatus.canResume)
         
@@ -180,7 +180,7 @@ class UIBugFixTest {
         val config = TimerConfig(workTimeSeconds = 20, restTimeSeconds = 10, totalRounds = 3)
         
         // IDLE -> RUNNING (via start)
-        val idleStatus = TimerStatus(state = TimerState.IDLE, config = config)
+        val idleStatus = TimerStatus(state = TimerState.STOPPED, config = config)
         assertTrue("Can start from IDLE", idleStatus.canStart)
         
         // RUNNING -> PAUSED (via pause)
@@ -230,7 +230,7 @@ class UIBugFixTest {
         // In the actual implementation, status bar color should match background
         
         // Test that we can create different timer states that would trigger theming
-        val idleState = TimerState.IDLE
+        val idleState = TimerState.STOPPED
         val runningState = TimerState.RUNNING
         val pausedState = TimerState.PAUSED
         

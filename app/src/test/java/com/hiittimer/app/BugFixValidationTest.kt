@@ -90,7 +90,7 @@ class BugFixValidationTest {
         // Should show default work time (20 seconds) instead of 00:00.0
         assertEquals("Should show default work time", 20, defaultStatus.timeRemainingSeconds)
         assertEquals("Should start with 0 milliseconds", 0, defaultStatus.timeRemainingMilliseconds)
-        assertEquals("Should be in IDLE state", TimerState.IDLE, defaultStatus.state)
+        assertEquals("Should be in IDLE state", TimerState.STOPPED, defaultStatus.state)
         assertEquals("Should be in WORK interval", IntervalType.WORK, defaultStatus.currentInterval)
         assertEquals("Should start at round 1", 1, defaultStatus.currentRound)
 
@@ -244,7 +244,7 @@ class BugFixValidationTest {
 
         val originalConfig = TimerConfig(workTimeSeconds = 20, restTimeSeconds = 10, totalRounds = 5)
         val originalStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = originalConfig.workTimeSeconds,
             timeRemainingMilliseconds = 0,
@@ -273,8 +273,8 @@ class BugFixValidationTest {
         val runningStatus = originalStatus.copy(state = TimerState.RUNNING)
         // In actual implementation, TimerManager.updateConfig checks for IDLE state
         // This test confirms the logic works correctly
-        assertTrue("Configuration updates should only work when IDLE", originalStatus.state == TimerState.IDLE)
-        assertFalse("Configuration should not update when RUNNING", runningStatus.state == TimerState.IDLE)
+        assertTrue("Configuration updates should only work when IDLE", originalStatus.state == TimerState.STOPPED)
+        assertFalse("Configuration should not update when RUNNING", runningStatus.state == TimerState.STOPPED)
     }
 
     // ========================================
@@ -355,7 +355,7 @@ class BugFixValidationTest {
 
         // Simulate reset with preserved configuration
         val resetStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = customConfig.workTimeSeconds,
             timeRemainingMilliseconds = 0,
@@ -364,7 +364,7 @@ class BugFixValidationTest {
         )
 
         // Verify state is reset but configuration is preserved
-        assertEquals(TimerState.IDLE, resetStatus.state)
+        assertEquals(TimerState.STOPPED, resetStatus.state)
         assertEquals(45, resetStatus.config.workTimeSeconds)
         assertEquals(15, resetStatus.config.restTimeSeconds)
         assertEquals(8, resetStatus.config.totalRounds)
@@ -393,7 +393,7 @@ class BugFixValidationTest {
 
         // Simulate multiple reset operations with preserved configuration
         val resetStatus1 = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = customConfig.workTimeSeconds,
             timeRemainingMilliseconds = 0,
@@ -402,7 +402,7 @@ class BugFixValidationTest {
         )
 
         val resetStatus2 = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = customConfig.workTimeSeconds,
             timeRemainingMilliseconds = 0,
@@ -415,13 +415,13 @@ class BugFixValidationTest {
         assertEquals(20, resetStatus1.config.restTimeSeconds)
         assertEquals(3, resetStatus1.config.totalRounds)
         assertTrue(resetStatus1.config.noRest)
-        assertEquals(TimerState.IDLE, resetStatus1.state)
+        assertEquals(TimerState.STOPPED, resetStatus1.state)
 
         assertEquals(30, resetStatus2.config.workTimeSeconds)
         assertEquals(20, resetStatus2.config.restTimeSeconds)
         assertEquals(3, resetStatus2.config.totalRounds)
         assertTrue(resetStatus2.config.noRest)
-        assertEquals(TimerState.IDLE, resetStatus2.state)
+        assertEquals(TimerState.STOPPED, resetStatus2.state)
     }
 
     @Test
@@ -437,7 +437,7 @@ class BugFixValidationTest {
 
         // Simulate reset operation with correct time remaining
         val resetStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = customConfig.workTimeSeconds,
             timeRemainingMilliseconds = 0,
@@ -450,7 +450,7 @@ class BugFixValidationTest {
         assertEquals(0, resetStatus.timeRemainingMilliseconds)
         assertEquals(IntervalType.WORK, resetStatus.currentInterval)
         assertEquals(1, resetStatus.currentRound)
-        assertEquals(TimerState.IDLE, resetStatus.state)
+        assertEquals(TimerState.STOPPED, resetStatus.state)
 
         // Verify configuration is preserved
         assertEquals(60, resetStatus.config.workTimeSeconds)
@@ -475,7 +475,7 @@ class BugFixValidationTest {
 
         // Simulate reset with preserved configuration
         val resetStatus = TimerStatus(
-            state = TimerState.IDLE,
+            state = TimerState.STOPPED,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = customConfig.workTimeSeconds,
             timeRemainingMilliseconds = 0,
@@ -490,6 +490,6 @@ class BugFixValidationTest {
         assertEquals(5, resetStatus.config.restTimeSeconds)
         assertEquals(4, resetStatus.config.totalRounds)
         assertEquals(25, resetStatus.timeRemainingSeconds)
-        assertEquals(TimerState.IDLE, resetStatus.state)
+        assertEquals(TimerState.STOPPED, resetStatus.state)
     }
 }

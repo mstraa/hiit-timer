@@ -77,7 +77,12 @@ class TimerService : Service() {
         
         when (intent?.action) {
             ACTION_START_TIMER -> {
-                val config = intent.getSerializableExtra(EXTRA_TIMER_CONFIG) as? TimerConfig
+                val config = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    intent.getSerializableExtra(EXTRA_TIMER_CONFIG, TimerConfig::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getSerializableExtra(EXTRA_TIMER_CONFIG) as? TimerConfig
+                }
                 val presetId = intent.getStringExtra(EXTRA_PRESET_ID)
                 val presetName = intent.getStringExtra(EXTRA_PRESET_NAME) ?: "Custom Workout"
                 val exerciseName = intent.getStringExtra(EXTRA_EXERCISE_NAME)
@@ -97,8 +102,11 @@ class TimerService : Service() {
 
     /**
      * Start timer and enter foreground mode
+     * STOPPED/FINISHED → BEGIN → RUNNING
      */
     private fun startTimer(config: TimerConfig, presetId: String?, presetName: String, exerciseName: String?) {
+        com.hiittimer.app.utils.Logger.d(com.hiittimer.app.error.ErrorHandler.ErrorCategory.TIMER_OPERATION, "TimerService: Starting timer ${timerManager.timerStatus.value.state} → BEGIN")
+        
         // Start foreground service with notification
         val notification = notificationManager.createTimerNotification(
             timerStatus = timerManager.timerStatus.value,
@@ -111,7 +119,7 @@ class TimerService : Service() {
             wakeLockManager.acquireWakeLock()
         }
         
-        // Start timer
+        // Start timer (STOPPED → BEGIN)
         timerManager.start(config, presetId, presetName, exerciseName)
         
         // Start monitoring timer status for notification updates
@@ -122,6 +130,7 @@ class TimerService : Service() {
      * Pause timer
      */
     private fun pauseTimer() {
+        com.hiittimer.app.utils.Logger.d(com.hiittimer.app.error.ErrorHandler.ErrorCategory.TIMER_OPERATION, "TimerService: Pausing timer, current state=${timerManager.timerStatus.value.state}")
         timerManager.pause()
         
         // Release wake lock when paused
@@ -129,12 +138,14 @@ class TimerService : Service() {
         
         // Update notification
         updateNotification()
+        com.hiittimer.app.utils.Logger.d(com.hiittimer.app.error.ErrorHandler.ErrorCategory.TIMER_OPERATION, "TimerService: Timer paused, new state=${timerManager.timerStatus.value.state}, canResume=${timerManager.timerStatus.value.canResume}")
     }
 
     /**
      * Resume timer
      */
     private fun resumeTimer() {
+        com.hiittimer.app.utils.Logger.d(com.hiittimer.app.error.ErrorHandler.ErrorCategory.TIMER_OPERATION, "TimerService: Resuming timer, current state=${timerManager.timerStatus.value.state}")
         timerManager.resume()
         
         // Re-acquire wake lock (only if performance allows)
@@ -144,30 +155,45 @@ class TimerService : Service() {
         
         // Update notification
         updateNotification()
+        com.hiittimer.app.utils.Logger.d(com.hiittimer.app.error.ErrorHandler.ErrorCategory.TIMER_OPERATION, "TimerService: Timer resumed, new state=${timerManager.timerStatus.value.state}, canPause=${timerManager.timerStatus.value.canPause}")
     }
 
     /**
      * Stop timer and exit foreground mode
+     * Resets timer to STOPPED state
      */
     private fun stopTimer() {
+        com.hiittimer.app.utils.Logger.d(com.hiittimer.app.error.ErrorHandler.ErrorCategory.TIMER_OPERATION, "TimerService: Stopping timer → STOPPED")
         timerManager.reset()
         wakeLockManager.releaseWakeLock()
-        stopForeground(true)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
         stopSelf()
     }
 
     /**
-     * Reset timer
+     * Reset timer: Any state → STOPPED
      */
     private fun resetTimer() {
+        com.hiittimer.app.utils.Logger.d(com.hiittimer.app.error.ErrorHandler.ErrorCategory.TIMER_OPERATION, "TimerService: Resetting timer → STOPPED")
         timerManager.reset()
         wakeLockManager.releaseWakeLock()
-        stopForeground(true)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
         stopSelf()
     }
 
     /**
      * Start monitoring timer status for notification updates
+     * Now handles BEGIN state properly
      */
     private fun startTimerStatusMonitoring() {
         statusMonitoringJob?.cancel()
@@ -180,7 +206,12 @@ class TimerService : Service() {
                     wakeLockManager.releaseWakeLock()
                     // Keep notification for a few seconds to show completion
                     delay(5000)
-                    stopForeground(true)
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        stopForeground(true)
+                    }
                     stopSelf()
                 }
             }
@@ -189,11 +220,13 @@ class TimerService : Service() {
 
     /**
      * Update notification with current timer status
+     * Now handles BEGIN state as running state for notification purposes
      */
     private fun updateNotification() {
+        val currentStatus = timerManager.timerStatus.value
         val notification = notificationManager.createTimerNotification(
-            timerStatus = timerManager.timerStatus.value,
-            isRunning = timerManager.timerStatus.value.state == TimerState.RUNNING
+            timerStatus = currentStatus,
+            isRunning = currentStatus.state == TimerState.RUNNING || currentStatus.state == TimerState.BEGIN
         )
         notificationManager.updateNotification(NOTIFICATION_ID, notification)
     }
