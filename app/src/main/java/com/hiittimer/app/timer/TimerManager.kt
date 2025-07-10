@@ -181,7 +181,7 @@ class TimerManager(
     fun updateConfig(config: TimerConfig) {
         val currentState = _timerStatus.value.state
         
-        if (currentState != TimerState.STOPPED && currentState != TimerState.FINISHED) {
+        if (currentState != TimerState.STOPPED && currentState != TimerState.FINISHED && currentState != TimerState.PAUSED) {
             Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION,
                 "Cannot update configuration while timer is $currentState")
             return

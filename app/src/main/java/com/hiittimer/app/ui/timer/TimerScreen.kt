@@ -153,7 +153,7 @@ fun TimerScreen(
                 onClose = { isTimerConfigOpen = false },
                 config = timerStatus.config,
                 onConfigUpdate = { config ->
-                    viewModel.updateConfig(
+                    viewModel.updateConfigAndReset(
                         workTimeSeconds = config.workTimeSeconds,
                         restTimeSeconds = config.restTimeSeconds,
                         totalRounds = config.totalRounds,

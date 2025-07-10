@@ -215,7 +215,6 @@ private fun TimerConfigContent(
                             noRest = noRest,
                             countdownDurationSeconds = beginTimeInt
                         )
-                        onResetTimer()
                         onConfigUpdate(newConfig)
                         onClose()
                     } catch (e: IllegalArgumentException) {

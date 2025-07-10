@@ -231,6 +231,47 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
             Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Failed to update configuration: ${e.message}", e)
         }
     }
+
+    /**
+     * Update configuration and reset timer to use the new config
+     */
+    fun updateConfigAndReset(
+        workTimeSeconds: Int = timerStatus.value.config.workTimeSeconds,
+        restTimeSeconds: Int = timerStatus.value.config.restTimeSeconds,
+        totalRounds: Int = timerStatus.value.config.totalRounds,
+        isUnlimited: Boolean = timerStatus.value.config.isUnlimited,
+        noRest: Boolean = timerStatus.value.config.noRest,
+        countdownDurationSeconds: Int = timerStatus.value.config.countdownDurationSeconds
+    ) {
+        try {
+            val newConfig = TimerConfig(
+                workTimeSeconds = workTimeSeconds,
+                restTimeSeconds = restTimeSeconds,
+                totalRounds = totalRounds,
+                isUnlimited = isUnlimited,
+                noRest = noRest,
+                countdownDurationSeconds = countdownDurationSeconds
+            )
+            Logger.d(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Updating config and resetting: work=${workTimeSeconds}s, rest=${restTimeSeconds}s, rounds=${totalRounds}, state=${timerStatus.value.state}")
+            
+            // Update config and reset using service if connected, fallback otherwise
+            if (serviceConnection.isBound()) {
+                serviceConnection.updateConfig(newConfig)
+                if (timerStatus.value.canReset) {
+                    serviceConnection.resetTimer()
+                }
+            } else {
+                fallbackTimerManager.updateConfig(newConfig)
+                if (timerStatus.value.canReset) {
+                    fallbackTimerManager.reset()
+                }
+            }
+        } catch (e: IllegalArgumentException) {
+            Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Invalid configuration: ${e.message}", e)
+        } catch (e: Exception) {
+            Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Failed to update configuration and reset: ${e.message}", e)
+        }
+    }
     
     /**
      * Toggle audio enabled/disabled (FR-007: Audio Controls)
