@@ -6,20 +6,29 @@ import kotlinx.coroutines.test.*
 import org.junit.Test
 import org.junit.Assert.*
 import org.junit.Before
+import org.junit.After
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 
 /**
  * Integration test for pause-resume flow to debug the resume button issue
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class PauseResumeFlowTest {
 
     private lateinit var timerManager: TimerManager
+    private val testDispatcher = UnconfinedTestDispatcher()
     
     @Before
     fun setUp() {
         MockitoAnnotations.openMocks(this)
+        Dispatchers.setMain(testDispatcher)
         timerManager = TimerManager()
+    }
+    
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test

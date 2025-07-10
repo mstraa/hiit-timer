@@ -37,10 +37,10 @@ class TimerStartCrashFixTest {
 
         // Invalid rest time should throw exception (when rest is enabled)
         try {
-            TimerConfig(workTimeSeconds = 30, restTimeSeconds = 3, totalRounds = 3, noRest = false)
+            TimerConfig(workTimeSeconds = 30, restTimeSeconds = 0, totalRounds = 3, noRest = false)
             fail("Should have thrown exception for invalid rest time")
         } catch (e: IllegalArgumentException) {
-            assertTrue(e.message?.contains("Rest time must be between 5 and 300 seconds") == true)
+            assertTrue(e.message?.contains("Rest time must be between 1 and 300 seconds") == true)
         }
 
         // Invalid rounds should throw exception (when not unlimited)

@@ -87,7 +87,7 @@ class TimerManagerTest {
         
         // Invalid rest time (too low)
         try {
-            TimerConfig(workTimeSeconds = 20, restTimeSeconds = 4, totalRounds = 5)
+            TimerConfig(workTimeSeconds = 20, restTimeSeconds = 0, totalRounds = 5)
             fail("Should have thrown exception for invalid rest time")
         } catch (e: IllegalArgumentException) {
             // Expected
