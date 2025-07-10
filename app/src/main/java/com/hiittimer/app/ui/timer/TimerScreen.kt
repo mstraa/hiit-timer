@@ -454,7 +454,7 @@ private fun TimerDisplay(
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
         )
 
-        // Next interval preview (FR-005: 5 seconds before transition)
+        // Next interval preview (FR-005: Always visible during running)
         timerStatus.getNextIntervalPreview()?.let { preview: String ->
             Spacer(modifier = Modifier.height(height = adaptiveSpacing))
             Card(

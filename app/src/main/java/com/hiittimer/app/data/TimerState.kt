@@ -81,7 +81,7 @@ data class TimerStatus(
     val canStart: Boolean get() = state == TimerState.STOPPED || state == TimerState.FINISHED
     val canPause: Boolean get() = state == TimerState.RUNNING
     val canResume: Boolean get() = state == TimerState.PAUSED
-    val canReset: Boolean get() = state != TimerState.STOPPED // Can reset from any state except STOPPED
+    val canReset: Boolean get() = state == TimerState.BEGIN || state == TimerState.PAUSED || state == TimerState.FINISHED // Can reset from BEGIN, PAUSED or FINISHED states only
     
     /**
      * Format time remaining with conditional formatting (FR-019: Timer Display Format Enhancement)
@@ -117,10 +117,21 @@ data class TimerStatus(
      * Get next interval preview text (FR-005: Next interval preview)
      */
     fun getNextIntervalPreview(): String? {
-        if (state != TimerState.RUNNING || timeRemainingSeconds > 5) return null
+        if (state != TimerState.RUNNING) return null
 
         return when (currentInterval) {
-            IntervalType.WORK -> "Next: REST (${config.restTimeSeconds}s)"
+            IntervalType.WORK -> {
+                if (config.noRest) {
+                    val nextRound = currentRound + 1
+                    if (config.isUnlimited || nextRound <= config.totalRounds) {
+                        "Next: WORK (${config.workTimeSeconds}s)"
+                    } else {
+                        "Next: FINISHED"
+                    }
+                } else {
+                    "Next: REST (${config.restTimeSeconds}s)"
+                }
+            }
             IntervalType.REST -> {
                 val nextRound = currentRound + 1
                 if (config.isUnlimited || nextRound <= config.totalRounds) {
@@ -136,7 +147,7 @@ data class TimerStatus(
      * Check if next interval preview should be shown
      */
     val shouldShowNextIntervalPreview: Boolean
-        get() = state == TimerState.RUNNING && timeRemainingSeconds <= 5
+        get() = state == TimerState.RUNNING
 
     /**
      * Get countdown display text for BEGIN state

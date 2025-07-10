@@ -117,7 +117,7 @@ class TimerScreenUITest {
     fun `timer status provides correct next interval preview`() {
         val config = TimerConfig(workTimeSeconds = 30, restTimeSeconds = 15, totalRounds = 3)
         
-        // Test work interval with time <= 5 seconds
+        // Test work interval - always shows next rest
         val workStatus = TimerStatus(
             state = TimerState.RUNNING,
             currentInterval = IntervalType.WORK,
@@ -127,7 +127,7 @@ class TimerScreenUITest {
         assertEquals("Next: REST (15s)", workStatus.getNextIntervalPreview())
         assertTrue(workStatus.shouldShowNextIntervalPreview)
         
-        // Test rest interval with time <= 5 seconds
+        // Test rest interval - shows next work
         val restStatus = TimerStatus(
             state = TimerState.RUNNING,
             currentInterval = IntervalType.REST,
@@ -137,14 +137,14 @@ class TimerScreenUITest {
         )
         assertEquals("Next: WORK (30s)", restStatus.getNextIntervalPreview())
         
-        // Test when time > 5 seconds (no preview)
+        // Test when time > 5 seconds (still shows preview - always visible now)
         val longTimeStatus = TimerStatus(
             state = TimerState.RUNNING,
             currentInterval = IntervalType.WORK,
             timeRemainingSeconds = 10,
             config = config
         )
-        assertNull(longTimeStatus.getNextIntervalPreview())
-        assertFalse(longTimeStatus.shouldShowNextIntervalPreview)
+        assertEquals("Next: REST (15s)", longTimeStatus.getNextIntervalPreview())
+        assertTrue(longTimeStatus.shouldShowNextIntervalPreview)
     }
 }
