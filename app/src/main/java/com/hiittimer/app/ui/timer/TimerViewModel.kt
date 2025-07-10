@@ -9,6 +9,8 @@ import com.hiittimer.app.data.*
 import com.hiittimer.app.performance.PerformanceManager
 import com.hiittimer.app.service.TimerServiceConnection
 import com.hiittimer.app.timer.TimerManager
+import com.hiittimer.app.utils.Logger
+import com.hiittimer.app.error.ErrorHandler
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -59,16 +61,25 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Start the timer with current configuration
      */
     fun startTimer() {
-        // Only start if currently idle
-        if (timerStatus.value.canStart) {
-            val config = timerStatus.value.config
-            // Always use fallback timer manager for reliable operation
-            fallbackTimerManager.start(config)
+        try {
+            // Only start if currently idle or finished
+            if (timerStatus.value.canStart) {
+                val config = timerStatus.value.config
+                Logger.d(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Starting timer: canStart=${timerStatus.value.canStart}, state=${timerStatus.value.state}")
 
-            // Also start service for background operation if available
-            if (serviceConnection.isBound()) {
-                serviceConnection.startTimer(config)
+                // Always use fallback timer manager for reliable operation
+                fallbackTimerManager.start(config)
+
+                // Also start service for background operation if available
+                if (serviceConnection.isBound()) {
+                    serviceConnection.startTimer(config)
+                }
+            } else {
+                Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Cannot start timer: canStart=${timerStatus.value.canStart}, state=${timerStatus.value.state}")
             }
+        } catch (e: Exception) {
+            Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Failed to start timer: ${e.message}", e)
+            // In a production app, you might want to emit an error state here
         }
     }
 
@@ -97,12 +108,19 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Pause the timer
      */
     fun pauseTimer() {
-        // Only pause if currently running
-        if (timerStatus.value.canPause) {
-            fallbackTimerManager.pause()
-            if (serviceConnection.isBound()) {
-                serviceConnection.pauseTimer()
+        try {
+            // Only pause if currently running
+            if (timerStatus.value.canPause) {
+                Logger.d(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Pausing timer: canPause=${timerStatus.value.canPause}, state=${timerStatus.value.state}")
+                fallbackTimerManager.pause()
+                if (serviceConnection.isBound()) {
+                    serviceConnection.pauseTimer()
+                }
+            } else {
+                Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Cannot pause timer: canPause=${timerStatus.value.canPause}, state=${timerStatus.value.state}")
             }
+        } catch (e: Exception) {
+            Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Failed to pause timer: ${e.message}", e)
         }
     }
 
@@ -110,12 +128,19 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Resume the timer
      */
     fun resumeTimer() {
-        // Only resume if currently paused
-        if (timerStatus.value.canResume) {
-            fallbackTimerManager.resume()
-            if (serviceConnection.isBound()) {
-                serviceConnection.resumeTimer()
+        try {
+            // Only resume if currently paused
+            if (timerStatus.value.canResume) {
+                Logger.d(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Resuming timer: canResume=${timerStatus.value.canResume}, state=${timerStatus.value.state}")
+                fallbackTimerManager.resume()
+                if (serviceConnection.isBound()) {
+                    serviceConnection.resumeTimer()
+                }
+            } else {
+                Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Cannot resume timer: canResume=${timerStatus.value.canResume}, state=${timerStatus.value.state}")
             }
+        } catch (e: Exception) {
+            Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Failed to resume timer: ${e.message}", e)
         }
     }
 
@@ -123,14 +148,23 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Reset the timer
      */
     fun resetTimer() {
-        // Ensure both fallback and service are reset to maintain synchronization
-        fallbackTimerManager.reset()
-        if (serviceConnection.isBound()) {
-            serviceConnection.resetTimer()
+        try {
+            if (timerStatus.value.canReset) {
+                Logger.d(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Resetting timer: canReset=${timerStatus.value.canReset}, state=${timerStatus.value.state}")
+                // Ensure both fallback and service are reset to maintain synchronization
+                fallbackTimerManager.reset()
+                if (serviceConnection.isBound()) {
+                    serviceConnection.resetTimer()
+                }
+                // Force state synchronization after reset
+                val currentConfig = timerStatus.value.config
+                fallbackTimerManager.updateConfig(currentConfig)
+            } else {
+                Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Cannot reset timer: canReset=${timerStatus.value.canReset}, state=${timerStatus.value.state}")
+            }
+        } catch (e: Exception) {
+            Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Failed to reset timer: ${e.message}", e)
         }
-        // Force state synchronization after reset
-        val currentConfig = timerStatus.value.config
-        fallbackTimerManager.updateConfig(currentConfig)
     }
     
     /**
@@ -151,10 +185,18 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
                 isUnlimited = isUnlimited,
                 noRest = noRest
             )
+            Logger.d(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Updating config: work=${workTimeSeconds}s, rest=${restTimeSeconds}s, rounds=${totalRounds}, state=${timerStatus.value.state}")
             fallbackTimerManager.updateConfig(newConfig)
+
+            // Also update service if connected
+            if (serviceConnection.isBound()) {
+                serviceConnection.updateConfig(newConfig)
+            }
         } catch (e: IllegalArgumentException) {
+            Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Invalid configuration: ${e.message}", e)
             // Handle validation errors - in a real app, you might want to emit an error state
-            // For now, we'll just ignore invalid configurations
+        } catch (e: Exception) {
+            Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Failed to update configuration: ${e.message}", e)
         }
     }
     

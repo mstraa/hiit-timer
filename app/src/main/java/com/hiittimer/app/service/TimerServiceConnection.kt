@@ -131,6 +131,13 @@ class TimerServiceConnection(
     }
 
     /**
+     * Update timer configuration
+     */
+    fun updateConfig(config: TimerConfig) {
+        timerService?.updateConfig(config)
+    }
+
+    /**
      * Get audio manager from service
      */
     fun getAudioManager(): AudioManager? {

@@ -38,6 +38,8 @@ import com.hiittimer.app.ui.components.VisualFeedbackOverlay
 import com.hiittimer.app.ui.fullscreen.FullscreenController
 import com.hiittimer.app.ui.theme.HIITColors
 import com.hiittimer.app.ui.utils.*
+import com.hiittimer.app.utils.Logger
+import com.hiittimer.app.error.ErrorHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -550,10 +552,23 @@ private fun TimerButton(
         // Start/Pause/Resume button
         Button(
             onClick = {
+                Logger.d(ErrorHandler.ErrorCategory.USER_INPUT, "Primary button clicked - State: ${timerStatus.state}, canStart: ${timerStatus.canStart}, canPause: ${timerStatus.canPause}, canResume: ${timerStatus.canResume}")
                 when {
-                    timerStatus.canStart -> viewModel.startTimer()
-                    timerStatus.canPause -> viewModel.pauseTimer()
-                    timerStatus.canResume -> viewModel.resumeTimer()
+                    timerStatus.canStart -> {
+                        Logger.d(ErrorHandler.ErrorCategory.USER_INPUT, "Starting timer")
+                        viewModel.startTimer()
+                    }
+                    timerStatus.canPause -> {
+                        Logger.d(ErrorHandler.ErrorCategory.USER_INPUT, "Pausing timer")
+                        viewModel.pauseTimer()
+                    }
+                    timerStatus.canResume -> {
+                        Logger.d(ErrorHandler.ErrorCategory.USER_INPUT, "Resuming timer")
+                        viewModel.resumeTimer()
+                    }
+                    else -> {
+                        Logger.w(ErrorHandler.ErrorCategory.USER_INPUT, "Primary button clicked but no valid action available")
+                    }
                 }
             },
             enabled = timerStatus.canStart || timerStatus.canPause || timerStatus.canResume,
@@ -576,7 +591,10 @@ private fun TimerButton(
     } else {
         // Reset button with icon (FR-020: Reset Button UI Enhancement)
         OutlinedButton(
-            onClick = { viewModel.resetTimer() },
+            onClick = {
+                Logger.d(ErrorHandler.ErrorCategory.USER_INPUT, "Reset button clicked - State: ${timerStatus.state}, canReset: ${timerStatus.canReset}")
+                viewModel.resetTimer()
+            },
             enabled = timerStatus.canReset,
             modifier = modifier
                 .heightIn(min = adaptiveButtonHeight)

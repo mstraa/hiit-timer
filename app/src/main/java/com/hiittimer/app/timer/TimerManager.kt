@@ -46,11 +46,11 @@ class TimerManager(
      */
     fun start(config: TimerConfig, presetId: String? = null, presetName: String = "Custom Workout", exerciseName: String? = null) {
         try {
-            // Validate state
-            if (_timerStatus.value.state != TimerState.IDLE) {
+            // Validate state - allow starting from IDLE or FINISHED
+            if (_timerStatus.value.state != TimerState.IDLE && _timerStatus.value.state != TimerState.FINISHED) {
                 Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION,
-                    "Attempted to start timer in non-idle state: ${_timerStatus.value.state}")
-                throw ErrorHandler.TimerException.TimerStateInvalid("Timer is not in idle state")
+                    "Attempted to start timer in invalid state: ${_timerStatus.value.state}")
+                throw ErrorHandler.TimerException.TimerStateInvalid("Timer can only be started from IDLE or FINISHED state")
             }
 
             // Validate configuration
@@ -148,15 +148,20 @@ class TimerManager(
     }
     
     /**
-     * Update timer configuration (only when timer is idle)
+     * Update timer configuration (when timer is idle or finished)
      */
     fun updateConfig(config: TimerConfig) {
-        if (_timerStatus.value.state == TimerState.IDLE) {
+        val currentState = _timerStatus.value.state
+        if (currentState == TimerState.IDLE || currentState == TimerState.FINISHED) {
             _timerStatus.value = _timerStatus.value.copy(
                 config = config,
                 timeRemainingSeconds = config.workTimeSeconds,
                 timeRemainingMilliseconds = 0
             )
+            Logger.i(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Configuration updated: workTime=${config.workTimeSeconds}s, restTime=${config.restTimeSeconds}s, rounds=${config.totalRounds}")
+        } else {
+            Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION,
+                "Cannot update configuration while timer is ${currentState}")
         }
     }
     

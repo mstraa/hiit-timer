@@ -213,6 +213,13 @@ class TimerService : Service() {
      */
     fun getWorkoutHistoryRepository(): WorkoutHistoryRepository? = workoutHistoryRepository
 
+    /**
+     * Update timer configuration
+     */
+    fun updateConfig(config: TimerConfig) {
+        timerManager.updateConfig(config)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
 
