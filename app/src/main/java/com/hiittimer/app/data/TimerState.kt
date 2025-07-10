@@ -117,7 +117,8 @@ data class TimerStatus(
      * Get next interval preview text (FR-005: Next interval preview)
      */
     fun getNextIntervalPreview(): String? {
-        if (state != TimerState.RUNNING) return null
+        if (state == TimerState.STOPPED ) return null
+        if (state == TimerState.BEGIN) return "Next: WORK (${config.workTimeSeconds}s)"
 
         return when (currentInterval) {
             IntervalType.WORK -> {

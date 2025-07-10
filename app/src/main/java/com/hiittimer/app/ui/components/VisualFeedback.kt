@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import com.hiittimer.app.data.IntervalType
 import com.hiittimer.app.data.TimerState
 import com.hiittimer.app.data.TimerStatus
@@ -101,6 +102,7 @@ fun IntervalTransitionEffect(
             modifier = modifier
                 .fillMaxSize()
                 .background(flashColor.copy(alpha = totalAlpha))
+                .pointerInput(Unit) {} // Prevent pointer events from affecting layout
         )
     }
 }
