@@ -33,5 +33,18 @@
   - Optimize layout for landscape orientation
 - **Priority**: Medium
 
+### 5. F-Droid Compliance Tasks
+- **Task**: Make app ready for F-Droid submission
+- **Description**: 
+  - Add LICENSE file to repository root with FSF-approved open-source license (GPL-3.0, MIT, Apache-2.0, etc.)
+  - Create F-Droid metadata structure with fastlane directory and app description
+  - Add screenshots for F-Droid store listing in fastlane/metadata/android/en-US/images/
+  - Create app description files for F-Droid (short_description.txt, full_description.txt)
+  - Verify build reproducibility by testing build process on clean environment
+  - Add clear statement about no tracking/analytics in README.md
+  - Submit app to F-Droid by creating merge request on fdroiddata repository
+- **Priority**: Low (especially LICENSE file)
+- **Status**: App is 95% compliant - only missing LICENSE file is blocking submission
+
 ## Notes
 Choose any of these tasks to work on during our next session. Tasks are organized by priority but can be tackled in any order based on your preferences.
