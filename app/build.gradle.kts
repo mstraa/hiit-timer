@@ -23,17 +23,6 @@ android {
         setProperty("archivesBaseName", "hiit-timer-v$versionName")
     }
 
-    signingConfigs {
-        create("release") {
-            // Note: In production, these should be loaded from environment variables or secure storage
-            // For demo purposes, using debug keystore
-            storeFile = file("debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-        }
-    }
-
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -49,7 +38,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            // Use default debug signing for development
+            // In production, configure proper signing
 
             // Optimize for production
             ndk {
