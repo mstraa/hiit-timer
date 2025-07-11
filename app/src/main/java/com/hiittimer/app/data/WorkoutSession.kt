@@ -8,28 +8,35 @@ import java.util.*
  */
 data class WorkoutSession(
     val id: String = UUID.randomUUID().toString(),
+    val date: Date = Date(),
+    val workoutName: String = "",
     val presetId: String? = null, // Reference to preset used (if any)
     val presetName: String, // Snapshot of preset name at time of workout
     val exerciseName: String? = null, // Exercise name from preset
-    val workTimeSeconds: Int,
-    val restTimeSeconds: Int,
-    val plannedRounds: Int,
+    val workTimeSeconds: Int = 0, // For simple workouts
+    val restTimeSeconds: Int = 0, // For simple workouts
+    val plannedRounds: Int = 0, // For simple workouts
     val completedRounds: Int,
+    val totalRounds: Int = 0, // Total exercises/rounds for complex workouts
     val isUnlimited: Boolean = false,
     val noRest: Boolean = false,
-    val startTime: Long, // Timestamp when workout started
-    val endTime: Long, // Timestamp when workout ended/stopped
-    val completionPercentage: Float, // Calculated completion percentage
+    val startTime: Long = System.currentTimeMillis(), // Timestamp when workout started
+    val endTime: Long = System.currentTimeMillis(), // Timestamp when workout ended/stopped
+    val completionPercentage: Float = 0f, // Calculated completion percentage
     val totalDurationMs: Long, // Total workout duration in milliseconds
     val actualWorkTimeMs: Long, // Actual time spent in work intervals
     val actualRestTimeMs: Long, // Actual time spent in rest intervals
-    val isCompleted: Boolean // True if ≥70% of planned rounds completed (FR-010)
+    val isCompleted: Boolean = false, // True if ≥70% of planned rounds completed (FR-010)
+    val completedPhases: List<String> = emptyList() // For complex workouts
 ) {
     init {
-        require(presetName.isNotBlank()) { "Preset name cannot be blank" }
-        require(workTimeSeconds > 0) { "Work time must be positive" }
-        require(noRest || restTimeSeconds > 0) { "Rest time must be positive when rest is enabled" }
-        require(plannedRounds > 0 || isUnlimited) { "Planned rounds must be positive or unlimited" }
+        require(presetName.isNotBlank() || workoutName.isNotBlank()) { "Workout name cannot be blank" }
+        // For simple workouts, validate work/rest times
+        if (workTimeSeconds > 0 || restTimeSeconds > 0) {
+            require(workTimeSeconds > 0) { "Work time must be positive" }
+            require(noRest || restTimeSeconds > 0) { "Rest time must be positive when rest is enabled" }
+            require(plannedRounds > 0 || isUnlimited) { "Planned rounds must be positive or unlimited" }
+        }
         require(completedRounds >= 0) { "Completed rounds cannot be negative" }
         require(startTime > 0) { "Start time must be positive" }
         require(endTime >= startTime) { "End time must be after start time" }
@@ -136,6 +143,8 @@ data class WorkoutSession(
             )
 
             return WorkoutSession(
+                date = Date(startTime),
+                workoutName = presetName,
                 presetId = presetId,
                 presetName = presetName,
                 exerciseName = exerciseName,
@@ -143,6 +152,7 @@ data class WorkoutSession(
                 restTimeSeconds = config.restTimeSeconds,
                 plannedRounds = config.totalRounds,
                 completedRounds = completedRounds,
+                totalRounds = config.totalRounds,
                 isUnlimited = config.isUnlimited,
                 noRest = config.noRest,
                 startTime = startTime,
