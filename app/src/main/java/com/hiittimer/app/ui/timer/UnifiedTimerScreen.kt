@@ -1,5 +1,6 @@
 package com.hiittimer.app.ui.timer
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -282,7 +283,12 @@ private fun TimerBottomControls(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .height(48.dp)
-                    .width(48.dp)
+                    .width(48.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Black,
+                    contentColor = Color.White
+                ),
+                border = BorderStroke(1.dp, Color.White)
             ) {
                 Icon(
                     imageVector = Icons.Default.List,
@@ -306,8 +312,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White
+                            containerColor = Color.White,
+                            contentColor = Color.Black
                         )
                     ) {
                         Text(
@@ -325,7 +331,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
+                            containerColor = Color.White,
+                            contentColor = Color.Black
                         )
                     ) {
                         Text(
@@ -343,8 +350,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White
+                            containerColor = Color.White,
+                            contentColor = Color.Black
                         )
                     ) {
                         Text(
@@ -360,8 +367,10 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.Black,
                             contentColor = Color.White
-                        )
+                        ),
+                        border = BorderStroke(1.dp, Color.White)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -378,7 +387,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = Color.White,
+                            contentColor = Color.Black
                         )
                     ) {
                         Text(
@@ -498,8 +508,8 @@ private fun ComplexWorkoutControls(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = Color.White
+                        containerColor = Color.White,
+                        contentColor = Color.Black
                     )
                 ) {
                     Text(
@@ -518,8 +528,8 @@ private fun ComplexWorkoutControls(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = Color.White
+                        containerColor = Color.White,
+                        contentColor = Color.Black
                     )
                 ) {
                     Text(
@@ -539,8 +549,10 @@ private fun ComplexWorkoutControls(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onBackground
-                    )
+                        containerColor = Color.Black,
+                        contentColor = Color.White
+                    ),
+                    border = BorderStroke(1.dp, Color.White)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowForward,
@@ -559,8 +571,8 @@ private fun ComplexWorkoutControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = Color.White
+                            containerColor = Color.White,
+                            contentColor = Color.Black
                         )
                     ) {
                         Icon(
@@ -580,8 +592,8 @@ private fun ComplexWorkoutControls(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = Color.White
+                        containerColor = Color.White,
+                        contentColor = Color.Black
                     )
                 ) {
                     Text(
@@ -600,8 +612,10 @@ private fun ComplexWorkoutControls(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.Black,
                         contentColor = Color.White
-                    )
+                    ),
+                    border = BorderStroke(1.dp, Color.White)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,

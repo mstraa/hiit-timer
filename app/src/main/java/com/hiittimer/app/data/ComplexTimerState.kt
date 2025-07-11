@@ -215,6 +215,7 @@ data class ComplexTimerState(
                 currentExerciseIndex = currentExerciseIndex + 1,
                 currentIntervalSeconds = 0,
                 currentSet = 1,
+                completedReps = 0,
                 isInRestPeriod = false,
                 completedExercises = completedExercises + 1
             )
@@ -225,6 +226,7 @@ data class ComplexTimerState(
                 currentExerciseIndex = 0,
                 currentIntervalSeconds = 0,
                 currentSet = 1,
+                completedReps = 0,
                 isInRestPeriod = false,
                 completedExercises = completedExercises + 1
             )
@@ -242,6 +244,7 @@ data class ComplexTimerState(
             currentPhaseRound = 1,
             currentIntervalSeconds = 0,
             currentSet = 1,
+            completedReps = 0,
             isInRestPeriod = false,
             amrapRoundsCompleted = 0,
             amrapCurrentExerciseIndex = 0,

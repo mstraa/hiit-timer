@@ -133,7 +133,7 @@ private fun WorkoutActiveDisplay(
         // Exercise name (only if available)
         if (state.currentExerciseName != null) {
             Text(
-                text = state.currentExerciseName,
+                text = if (state.intervalType == IntervalType.REST) "-" else state.currentExerciseName,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -342,11 +342,7 @@ private fun NextPhaseInfo(state: UnifiedTimerState) {
         }
         state.intervalType == IntervalType.WORK -> "Rest - 00:15" // Default rest time
         state.intervalType == IntervalType.REST -> {
-            if (state.currentExerciseName != null) {
-                "${state.currentExerciseName} - 00:30"
-            } else {
-                "Work - 00:30"
-            }
+            "Work - 00:30"
         }
         else -> null
     }

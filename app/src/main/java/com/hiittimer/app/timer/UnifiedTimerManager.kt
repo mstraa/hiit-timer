@@ -156,10 +156,21 @@ class UnifiedTimerManager(
     fun reset() {
         when (_workoutMode.value) {
             WorkoutMode.SIMPLE -> simpleTimerManager.reset()
-            WorkoutMode.COMPLEX -> complexTimerManager.reset()
+            WorkoutMode.COMPLEX -> {
+                complexTimerManager.reset()
+                // Keep the active workout so user can restart it
+                if (activeComplexWorkout != null) {
+                    _unifiedState.value = UnifiedTimerState(
+                        timerState = TimerState.STOPPED,
+                        canStart = true,
+                        currentPhaseName = activeComplexWorkout?.phases?.firstOrNull()?.name,
+                        totalPhases = activeComplexWorkout?.phases?.size ?: 0
+                    )
+                } else {
+                    _unifiedState.value = UnifiedTimerState()
+                }
+            }
         }
-        activeComplexWorkout = null
-        _unifiedState.value = UnifiedTimerState()
     }
     
     /**
@@ -330,7 +341,7 @@ data class UnifiedTimerState(
                 currentPhaseIndex = state.currentPhaseIndex,
                 totalPhases = workout.phases.size,
                 statusText = state.getStatusText(workout),
-                progressText = "Phase ${state.currentPhaseIndex + 1} of ${workout.phases.size}",
+                progressText = "${state.currentPhaseIndex + 1} of ${workout.phases.size}",
                 exerciseMode = exercise?.mode,
                 needsRepInput = exercise?.mode == WorkoutMode.REP_BASED || 
                                exercise?.mode == WorkoutMode.FOR_TIME,

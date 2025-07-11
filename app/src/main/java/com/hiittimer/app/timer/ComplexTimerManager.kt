@@ -134,9 +134,10 @@ class ComplexTimerManager(
             saveWorkoutSession()
         }
         
-        // Reset state
-        _timerState.value = ComplexTimerState(workoutId = "")
-        _currentWorkout.value = null
+        // Reset state but keep the workout ID
+        val currentWorkoutId = _timerState.value.workoutId
+        _timerState.value = ComplexTimerState(workoutId = currentWorkoutId)
+        // Keep the workout loaded
         sessionStartTime = 0
         pausedDurationMs = 0
         lastPauseTime = 0
