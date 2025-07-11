@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hiittimer.app.data.IntervalType
 import com.hiittimer.app.data.TimerState
 import com.hiittimer.app.data.WorkoutMode
 import com.hiittimer.app.timer.UnifiedTimerState
@@ -73,25 +74,18 @@ private fun BeginCountdownDisplay(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Phase info
-        Text(
-            text = state.currentPhaseName ?: "Workout",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+        // Phase indicator pill (same style as other phases)
+        PhaseIndicatorPill(
+            timerState = state.timerState,
+            intervalType = state.intervalType,
+            statusText = state.countdownText ?: "Get Ready!",
+            isLarge = true
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        // Next phase info
+        NextPhaseInfo(state = state)
         
-        // Countdown display
-        Text(
-            text = state.countdownText ?: "Get Ready!",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         
         // Large countdown number
         Text(
@@ -101,20 +95,9 @@ private fun BeginCountdownDisplay(
                 fontWeight = FontWeight.Bold,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
             ),
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Next exercise preview
-        if (state.currentExerciseName != null) {
-            Text(
-                text = "Next: ${state.currentExerciseName}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-        }
     }
 }
 
@@ -130,6 +113,19 @@ private fun WorkoutActiveDisplay(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Phase indicator pill (bigger, replaces status text)
+        PhaseIndicatorPill(
+            timerState = state.timerState,
+            intervalType = state.intervalType,
+            statusText = state.statusText,
+            isLarge = true
+        )
+        
+        // Next phase info
+        NextPhaseInfo(state = state)
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
         // Phase and exercise info
         if (state.currentPhaseName != null) {
             Text(
@@ -162,7 +158,6 @@ private fun WorkoutActiveDisplay(
             ),
             color = when {
                 state.timerState == TimerState.PAUSED -> MaterialTheme.colorScheme.error
-                state.exerciseMode == WorkoutMode.REP_BASED -> HIITColors.WorkIndicatorLight
                 else -> MaterialTheme.colorScheme.onBackground
             },
             textAlign = TextAlign.Center
@@ -347,5 +342,86 @@ private fun WorkoutIdleDisplay(
                 modifier = Modifier.size(32.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun PhaseIndicatorPill(
+    timerState: TimerState,
+    intervalType: IntervalType,
+    statusText: String,
+    isLarge: Boolean = false
+) {
+    val (backgroundColor, textColor) = when {
+        timerState == TimerState.BEGIN -> Pair(
+            Color(0xFF1976D2).copy(alpha = 0.15f), // Subtle blue
+            Color(0xFF1976D2)
+        )
+        intervalType == IntervalType.WORK -> Pair(
+            Color(0xFF388E3C).copy(alpha = 0.15f), // Subtle green
+            Color(0xFF388E3C)
+        )
+        intervalType == IntervalType.REST -> Pair(
+            Color(0xFFD32F2F).copy(alpha = 0.15f), // Subtle red
+            Color(0xFFD32F2F)
+        )
+        else -> Pair(
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.onSurface
+        )
+    }
+    
+    Surface(
+        shape = RoundedCornerShape(if (isLarge) 24.dp else 16.dp),
+        color = backgroundColor,
+        modifier = Modifier.padding(
+            horizontal = if (isLarge) 16.dp else 8.dp,
+            vertical = if (isLarge) 8.dp else 0.dp
+        )
+    ) {
+        Text(
+            text = statusText,
+            style = if (isLarge) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.labelLarge,
+            color = textColor,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(
+                horizontal = if (isLarge) 32.dp else 16.dp, 
+                vertical = if (isLarge) 16.dp else 8.dp
+            )
+        )
+    }
+}
+
+@Composable
+private fun NextPhaseInfo(state: UnifiedTimerState) {
+    // Try to get next phase information
+    val nextPhaseText = when {
+        state.timerState == TimerState.BEGIN -> {
+            if (state.currentExerciseName != null) {
+                "Next: ${state.currentExerciseName}"
+            } else {
+                "Next: Work"
+            }
+        }
+        state.intervalType == IntervalType.WORK -> "Next: Rest"
+        state.intervalType == IntervalType.REST -> {
+            if (state.currentExerciseName != null) {
+                "Next: ${state.currentExerciseName}"
+            } else {
+                "Next: Work"
+            }
+        }
+        else -> null
+    }
+    
+    if (nextPhaseText != null) {
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Text(
+            text = nextPhaseText,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
     }
 }

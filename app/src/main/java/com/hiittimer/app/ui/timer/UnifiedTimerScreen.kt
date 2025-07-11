@@ -40,8 +40,6 @@ fun TimerScreen(
     val unifiedState by viewModel.unifiedTimerState.collectAsState()
     val workoutMode by viewModel.workoutMode.collectAsState()
     val audioSettings by viewModel.audioSettings.collectAsState()
-    val themePreference by viewModel.themePreference.collectAsState()
-    val isDarkTheme = isSystemInDarkTheme()
 
     // State for new UI components
     var showAudioModal by remember { mutableStateOf(false) }
@@ -49,13 +47,8 @@ fun TimerScreen(
     var showPresetModal by remember { mutableStateOf(false) }
     var showMenuPanel by remember { mutableStateOf(false) }
 
-    // Background color based on state
-    val backgroundColor = when {
-        isDarkTheme -> Color.Black
-        timerStatus.currentInterval == IntervalType.REST -> Color(0x20F44336)
-        timerStatus.currentInterval == IntervalType.WORK -> Color(0x204CAF50)
-        else -> MaterialTheme.colorScheme.background
-    }
+    // Background color based on theme
+    val backgroundColor = MaterialTheme.colorScheme.background
 
     Box(
         modifier = Modifier
@@ -186,18 +179,16 @@ private fun SimpleTimerDisplay(
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Status text
-        Text(
-            text = unifiedState.statusText,
-            style = MaterialTheme.typography.headlineMedium,
-            color = when (unifiedState.intervalType) {
-                IntervalType.WORK -> HIITColors.WorkIndicatorLight
-                IntervalType.REST -> HIITColors.RestIndicatorLight
-                else -> MaterialTheme.colorScheme.onBackground
-            },
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
+        // Phase indicator pill (bigger, replaces status text)
+        PhaseIndicatorPill(
+            timerState = unifiedState.timerState,
+            intervalType = unifiedState.intervalType,
+            statusText = unifiedState.statusText,
+            isLarge = true
         )
+        
+        // Next phase info
+        NextPhaseInfo(state = unifiedState)
 
         // Main timer display
         Text(
@@ -207,11 +198,7 @@ private fun SimpleTimerDisplay(
                 fontWeight = FontWeight.Bold,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
             ),
-            color = when (unifiedState.intervalType) {
-                IntervalType.WORK -> HIITColors.WorkIndicatorLight
-                IntervalType.REST -> HIITColors.RestIndicatorLight
-                else -> MaterialTheme.colorScheme.onBackground
-            },
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
 
@@ -376,5 +363,86 @@ private fun TimerBottomControls(
                 else -> {} // Handle IDLE state if needed
             }
         }
+    }
+}
+
+@Composable
+private fun PhaseIndicatorPill(
+    timerState: TimerState,
+    intervalType: IntervalType,
+    statusText: String,
+    isLarge: Boolean = false
+) {
+    val (backgroundColor, textColor) = when {
+        timerState == TimerState.BEGIN -> Pair(
+            Color(0xFF1976D2).copy(alpha = 0.15f), // Subtle blue
+            Color(0xFF1976D2)
+        )
+        intervalType == IntervalType.WORK -> Pair(
+            Color(0xFF388E3C).copy(alpha = 0.15f), // Subtle green
+            Color(0xFF388E3C)
+        )
+        intervalType == IntervalType.REST -> Pair(
+            Color(0xFFD32F2F).copy(alpha = 0.15f), // Subtle red
+            Color(0xFFD32F2F)
+        )
+        else -> Pair(
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.onSurface
+        )
+    }
+    
+    Surface(
+        shape = RoundedCornerShape(if (isLarge) 24.dp else 16.dp),
+        color = backgroundColor,
+        modifier = Modifier.padding(
+            horizontal = if (isLarge) 16.dp else 8.dp,
+            vertical = if (isLarge) 8.dp else 0.dp
+        )
+    ) {
+        Text(
+            text = statusText,
+            style = if (isLarge) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.labelLarge,
+            color = textColor,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(
+                horizontal = if (isLarge) 32.dp else 16.dp, 
+                vertical = if (isLarge) 16.dp else 8.dp
+            )
+        )
+    }
+}
+
+@Composable
+private fun NextPhaseInfo(state: UnifiedTimerState) {
+    // Try to get next phase information
+    val nextPhaseText = when {
+        state.timerState == TimerState.BEGIN -> {
+            if (state.currentExerciseName != null) {
+                "Next: ${state.currentExerciseName}"
+            } else {
+                "Next: Work"
+            }
+        }
+        state.intervalType == IntervalType.WORK -> "Next: Rest"
+        state.intervalType == IntervalType.REST -> {
+            if (state.currentExerciseName != null) {
+                "Next: ${state.currentExerciseName}"
+            } else {
+                "Next: Work"
+            }
+        }
+        else -> null
+    }
+    
+    if (nextPhaseText != null) {
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Text(
+            text = nextPhaseText,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
     }
 }

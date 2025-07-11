@@ -26,19 +26,13 @@ fun HamburgerMenuPanel(
         audioSettings = audioSettings,
         themePreference = themePreference,
         onToggleAudio = {
-            val newSettings = audioSettings.copy(
-                isEnabled = !audioSettings.isEnabled
-            )
-            // Note: updateAudioSettings method needs to be added to UnifiedTimerViewModel
+            viewModel.toggleAudio()
         },
         onVolumeChange = { volume ->
-            val newSettings = audioSettings.copy(
-                volume = volume
-            )
-            // Note: updateAudioSettings method needs to be added to UnifiedTimerViewModel
+            viewModel.setAudioVolume(volume)
         },
         onThemeChange = { theme ->
-            // Note: updateThemePreference method needs to be added to UnifiedTimerViewModel
+            viewModel.setThemePreference(theme)
         },
         onNavigateToHistory = onNavigateToHistory,
         modifier = modifier
