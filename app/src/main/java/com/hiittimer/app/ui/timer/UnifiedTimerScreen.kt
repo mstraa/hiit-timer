@@ -5,8 +5,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -112,17 +115,35 @@ fun TimerScreen(
                 }
             }
 
-            // Bottom controls
-            TimerBottomControls(
-                timerState = timerStatus.state,
-                onConfigClick = { showConfigModal = true },
-                onPresetClick = { showPresetModal = true },
-                onStartClick = { viewModel.startTimer() },
-                onPauseClick = { viewModel.pauseTimer() },
-                onResumeClick = { viewModel.resumeTimer() },
-                onResetClick = { viewModel.resetTimer() },
-                onComplexWorkoutClick = onNavigateToWorkouts
-            )
+            // Bottom controls (only for simple workouts)
+            if (workoutMode == UnifiedTimerManager.WorkoutMode.SIMPLE) {
+                TimerBottomControls(
+                    timerState = timerStatus.state,
+                    onConfigClick = { showConfigModal = true },
+                    onPresetClick = { showPresetModal = true },
+                    onStartClick = { viewModel.startTimer() },
+                    onPauseClick = { viewModel.pauseTimer() },
+                    onResumeClick = { viewModel.resumeTimer() },
+                    onResetClick = { viewModel.resetTimer() },
+                    onComplexWorkoutClick = onNavigateToWorkouts
+                )
+            } else {
+                // Complex workout controls
+                ComplexWorkoutControls(
+                    timerState = unifiedState.timerState,
+                    onPlayPauseClick = {
+                        when (unifiedState.timerState) {
+                            TimerState.RUNNING -> viewModel.pauseTimer()
+                            TimerState.PAUSED -> viewModel.resumeTimer()
+                            else -> viewModel.startTimer()
+                        }
+                    },
+                    onResetClick = { viewModel.resetTimer() },
+                    onSkipClick = { viewModel.skipToNext() },
+                    onRepCompleted = { viewModel.markRepCompleted() },
+                    needsRepInput = unifiedState.needsRepInput
+                )
+            }
         }
 
         // Interval transition effect
@@ -451,5 +472,144 @@ private fun NextPhaseInfo(state: UnifiedTimerState) {
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             textAlign = TextAlign.Center
         )
+    }
+}
+
+@Composable
+private fun ComplexWorkoutControls(
+    timerState: TimerState,
+    onPlayPauseClick: () -> Unit,
+    onResetClick: () -> Unit,
+    onSkipClick: () -> Unit,
+    onRepCompleted: () -> Unit,
+    needsRepInput: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        when (timerState) {
+            TimerState.STOPPED, TimerState.FINISHED -> {
+                Button(
+                    onClick = onPlayPauseClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = if (timerState == TimerState.FINISHED) "New Workout" else "Start",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            TimerState.BEGIN, TimerState.RUNNING -> {
+                // Pause button
+                Button(
+                    onClick = onPlayPauseClick,
+                    modifier = Modifier
+                        .weight(0.4f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "Pause",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                // Skip button
+                OutlinedButton(
+                    onClick = onSkipClick,
+                    modifier = Modifier
+                        .weight(0.3f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onBackground
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = "Skip",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                
+                // Rep completed button (if needed)
+                if (needsRepInput) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onRepCompleted,
+                        modifier = Modifier
+                            .weight(0.3f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Rep Done",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+            TimerState.PAUSED -> {
+                // Resume button
+                Button(
+                    onClick = onPlayPauseClick,
+                    modifier = Modifier
+                        .weight(0.5f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "Resume",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                // Reset button
+                OutlinedButton(
+                    onClick = onResetClick,
+                    modifier = Modifier
+                        .weight(0.5f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Reset",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
     }
 }

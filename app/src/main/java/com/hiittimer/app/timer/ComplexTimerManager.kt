@@ -213,9 +213,8 @@ class ComplexTimerManager(
                         break
                     }
                     
-                    // Use performance-optimized interval
-                    val interval = performanceManager?.getOptimalTimerInterval() ?: 100L
-                    delay(interval)
+                    // Use 1 second delay for complex workouts
+                    delay(1000L)
                     
                     // Update timer
                     updateTimer()
@@ -235,7 +234,7 @@ class ComplexTimerManager(
         val exercise = currentState.getCurrentExercise(workout) ?: return
         val phase = currentState.getCurrentPhase(workout) ?: return
         
-        // Update elapsed time
+        // Update elapsed time by 1 second
         val newState = currentState.withElapsedTime(currentState.currentIntervalSeconds + 1)
         _timerState.value = newState
         

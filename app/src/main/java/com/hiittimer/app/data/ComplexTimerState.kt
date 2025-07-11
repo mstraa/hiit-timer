@@ -153,12 +153,8 @@ data class ComplexTimerState(
         return when {
             // Handle rest period completion
             isInRestPeriod -> {
-                copy(
-                    isInRestPeriod = false,
-                    currentIntervalSeconds = 0,
-                    currentExerciseIndex = currentExerciseIndex + 1,
-                    completedExercises = completedExercises + 1
-                )
+                // Rest complete, move to next exercise or phase
+                advanceToNextExercise(workout, phase)
             }
             
             // Handle AMRAP phase

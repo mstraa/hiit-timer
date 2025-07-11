@@ -74,11 +74,11 @@ private fun BeginCountdownDisplay(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Phase indicator pill (same style as other phases)
+        // Phase indicator pill showing "Begin"
         PhaseIndicatorPill(
             timerState = state.timerState,
             intervalType = state.intervalType,
-            statusText = state.countdownText ?: "Get Ready!",
+            statusText = "Begin",
             isLarge = true
         )
         
@@ -113,137 +113,74 @@ private fun WorkoutActiveDisplay(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Phase indicator pill (bigger, replaces status text)
+        // Phase indicator pill showing Work/Rest
         PhaseIndicatorPill(
             timerState = state.timerState,
             intervalType = state.intervalType,
-            statusText = state.statusText,
+            statusText = when (state.intervalType) {
+                IntervalType.WORK -> "Work"
+                IntervalType.REST -> "Rest"
+                else -> state.statusText
+            },
             isLarge = true
         )
         
         // Next phase info
         NextPhaseInfo(state = state)
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
-        // Phase and exercise info
-        if (state.currentPhaseName != null) {
-            Text(
-                text = state.currentPhaseName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        
+        // Exercise name (only if available)
         if (state.currentExerciseName != null) {
             Text(
                 text = state.currentExerciseName,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(vertical = 8.dp)
+                textAlign = TextAlign.Center
             )
+            Spacer(modifier = Modifier.height(16.dp))
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Main timer display
+        // Main timer display (larger)
         Text(
             text = state.displayTime,
             style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 100.sp,
+                fontSize = 120.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
             ),
-            color = when {
-                state.timerState == TimerState.PAUSED -> MaterialTheme.colorScheme.error
-                else -> MaterialTheme.colorScheme.onBackground
-            },
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Progress info
+        // Progress info (phase or round)
         Text(
             text = state.progressText,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-            textAlign = TextAlign.Center
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            modifier = Modifier.padding(top = 16.dp)
         )
         
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // Action buttons
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Play/Pause button
-            FloatingActionButton(
-                onClick = onPlayPauseClick,
-                containerColor = if (state.timerState == TimerState.PAUSED) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                }
-            ) {
-                Icon(
-                    imageVector = if (state.timerState == TimerState.PAUSED) {
-                        Icons.Default.PlayArrow
-                    } else {
-                        Icons.Default.PlayArrow // Use PlayArrow for now, can be updated later
-                    },
-                    contentDescription = if (state.timerState == TimerState.PAUSED) "Resume" else "Pause"
-                )
-            }
-            
-            // Rep completed button (for rep-based exercises)
-            if (state.needsRepInput) {
-                FloatingActionButton(
-                    onClick = onRepCompleted,
-                    containerColor = MaterialTheme.colorScheme.secondary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Rep Completed"
-                    )
-                }
-            }
-            
-            // Skip button
-            OutlinedButton(
-                onClick = onSkipClick,
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Skip Exercise"
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Skip")
-            }
-        }
-        
-        // Exercise mode specific info
+        // Exercise mode specific info (compact)
         when (state.exerciseMode) {
             WorkoutMode.AMRAP -> {
-                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "AMRAP - Rounds: ${state.amrapRounds}",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.Medium
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
             WorkoutMode.REP_BASED, WorkoutMode.FOR_TIME -> {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Tap ✓ when rep completed",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
+                if (state.needsRepInput) {
+                    Text(
+                        text = "Tap ✓ when rep completed",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
             else -> {}
         }

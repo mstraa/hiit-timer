@@ -324,6 +324,7 @@ data class UnifiedTimerState(
                 canPause = state.timerState == TimerState.RUNNING || state.timerState == TimerState.BEGIN,
                 canResume = state.timerState == TimerState.PAUSED,
                 canReset = state.timerState != TimerState.STOPPED,
+                intervalType = if (state.isInRestPeriod) IntervalType.REST else IntervalType.WORK,
                 currentPhaseName = phase?.name,
                 currentExerciseName = exercise?.name,
                 currentPhaseIndex = state.currentPhaseIndex,
