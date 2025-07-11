@@ -272,9 +272,9 @@ data class UnifiedTimerState(
                     else -> ""
                 },
                 progressText = if (status.config.isUnlimited) {
-                    "Round ${status.currentRound}"
+                    "${status.currentRound}"
                 } else {
-                    "Round ${status.currentRound} of ${status.config.totalRounds}"
+                    "${status.currentRound} of ${status.config.totalRounds}"
                 },
                 backgroundColor = when {
                     status.state == TimerState.BEGIN -> androidx.compose.ui.graphics.Color(0xFF2196F3) // Blue

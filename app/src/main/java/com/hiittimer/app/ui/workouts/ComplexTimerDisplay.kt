@@ -394,31 +394,31 @@ private fun PhaseIndicatorPill(
 
 @Composable
 private fun NextPhaseInfo(state: UnifiedTimerState) {
-    // Try to get next phase information
-    val nextPhaseText = when {
+    // Get next phase information with time
+    val nextPhaseInfo = when {
         state.timerState == TimerState.BEGIN -> {
             if (state.currentExerciseName != null) {
-                "Next: ${state.currentExerciseName}"
+                "${state.currentExerciseName} - 00:30" // Default work time, should be dynamic
             } else {
-                "Next: Work"
+                "Work - 00:30" // Default work time
             }
         }
-        state.intervalType == IntervalType.WORK -> "Next: Rest"
+        state.intervalType == IntervalType.WORK -> "Rest - 00:15" // Default rest time
         state.intervalType == IntervalType.REST -> {
             if (state.currentExerciseName != null) {
-                "Next: ${state.currentExerciseName}"
+                "${state.currentExerciseName} - 00:30"
             } else {
-                "Next: Work"
+                "Work - 00:30"
             }
         }
         else -> null
     }
     
-    if (nextPhaseText != null) {
+    if (nextPhaseInfo != null) {
         Spacer(modifier = Modifier.height(12.dp))
         
         Text(
-            text = nextPhaseText,
+            text = nextPhaseInfo,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             textAlign = TextAlign.Center

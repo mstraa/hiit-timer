@@ -107,9 +107,9 @@ data class TimerStatus(
      */
     fun getRoundProgressText(): String {
         return if (config.isUnlimited) {
-            "Round $currentRound"
+            "$currentRound"
         } else {
-            "Round $currentRound of ${config.totalRounds}"
+            "$currentRound of ${config.totalRounds}"
         }
     }
 

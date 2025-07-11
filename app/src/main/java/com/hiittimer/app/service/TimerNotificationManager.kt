@@ -117,9 +117,9 @@ class TimerNotificationManager(
             TimerState.RUNNING, TimerState.PAUSED -> {
                 val timeText = formatTime(timerStatus.timeRemainingSeconds)
                 val roundText = if (timerStatus.config.isUnlimited) {
-                    "Round ${timerStatus.currentRound}"
+                    "${timerStatus.currentRound}"
                 } else {
-                    "Round ${timerStatus.currentRound} of ${timerStatus.config.totalRounds}"
+                    "${timerStatus.currentRound} of ${timerStatus.config.totalRounds}"
                 }
                 "$timeText remaining • $roundText"
             }

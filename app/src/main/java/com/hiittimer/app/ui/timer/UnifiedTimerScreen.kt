@@ -5,6 +5,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -254,15 +255,19 @@ private fun TimerBottomControls(
             TimerConfigButton(onClick = onConfigClick)
             PresetButton(onClick = onPresetClick)
             
-            // Complex workout button
+            // Complex workout button (icon)
             OutlinedButton(
                 onClick = onComplexWorkoutClick,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .height(48.dp)
-                    .widthIn(min = 120.dp)
+                    .width(48.dp)
             ) {
-                Text("Workouts")
+                Icon(
+                    imageVector = Icons.Default.List,
+                    contentDescription = "Workouts",
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 
@@ -280,7 +285,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
                         )
                     ) {
                         Text(
@@ -316,7 +322,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
                         )
                     ) {
                         Text(
@@ -325,14 +332,14 @@ private fun TimerBottomControls(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(
+                    OutlinedButton(
                         onClick = onResetClick,
                         modifier = Modifier
                             .weight(0.5f)
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White
                         )
                     ) {
                         Icon(
@@ -415,31 +422,31 @@ private fun PhaseIndicatorPill(
 
 @Composable
 private fun NextPhaseInfo(state: UnifiedTimerState) {
-    // Try to get next phase information
-    val nextPhaseText = when {
+    // Get next phase information with time
+    val nextPhaseInfo = when {
         state.timerState == TimerState.BEGIN -> {
             if (state.currentExerciseName != null) {
-                "Next: ${state.currentExerciseName}"
+                "${state.currentExerciseName} - 00:30" // Default work time, should be dynamic
             } else {
-                "Next: Work"
+                "Work - 00:30" // Default work time
             }
         }
-        state.intervalType == IntervalType.WORK -> "Next: Rest"
+        state.intervalType == IntervalType.WORK -> "Rest - 00:15" // Default rest time
         state.intervalType == IntervalType.REST -> {
             if (state.currentExerciseName != null) {
-                "Next: ${state.currentExerciseName}"
+                "${state.currentExerciseName} - 00:30"
             } else {
-                "Next: Work"
+                "Work - 00:30"
             }
         }
         else -> null
     }
     
-    if (nextPhaseText != null) {
+    if (nextPhaseInfo != null) {
         Spacer(modifier = Modifier.height(12.dp))
         
         Text(
-            text = nextPhaseText,
+            text = nextPhaseInfo,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             textAlign = TextAlign.Center
