@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -277,5 +278,25 @@ fun RecentPresetsSection(
                 }
             }
         }
+    }
+}
+
+/**
+ * Preset button for timer header
+ */
+@Composable
+fun PresetButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+    ) {
+        Icon(
+            imageVector = Icons.Default.Star,
+            contentDescription = "Presets",
+            tint = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

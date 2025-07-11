@@ -28,10 +28,14 @@ import com.hiittimer.app.audio.AudioSettings
 import com.hiittimer.app.data.IntervalType
 import com.hiittimer.app.data.TimerState
 import com.hiittimer.app.data.TimerStatus
+import com.hiittimer.app.data.TimerConfig
+import com.hiittimer.app.data.Preset
 import com.hiittimer.app.ui.components.AudioToggleButton
 import com.hiittimer.app.ui.components.HamburgerMenuButton
 import com.hiittimer.app.ui.components.HamburgerMenuPanel
 import com.hiittimer.app.ui.components.IntervalTransitionEffect
+import com.hiittimer.app.ui.components.PresetButton
+import com.hiittimer.app.ui.components.PresetModal
 import com.hiittimer.app.ui.components.TimerConfigButton
 import com.hiittimer.app.ui.components.TimerConfigModal
 import com.hiittimer.app.ui.components.VisualFeedbackOverlay
@@ -55,6 +59,7 @@ fun TimerScreen(
     // State for new UI components (FR-016: Settings UI Reorganization)
     var isHamburgerMenuOpen by remember { mutableStateOf(false) }
     var isTimerConfigOpen by remember { mutableStateOf(false) }
+    var isPresetsOpen by remember { mutableStateOf(false) }
 
     // Fullscreen mode controller (FR-019: True Fullscreen Mode)
     FullscreenController(
@@ -99,7 +104,8 @@ fun TimerScreen(
                     adaptiveTimerFontSize = adaptiveTimerFontSize,
                     viewModel = viewModel,
                     onOpenHamburgerMenu = { isHamburgerMenuOpen = true },
-                    onOpenTimerConfig = { isTimerConfigOpen = true }
+                    onOpenTimerConfig = { isTimerConfigOpen = true },
+                    onOpenPresets = { isPresetsOpen = true }
                 )
             } else {
                 PortraitTimerLayout(
@@ -111,7 +117,8 @@ fun TimerScreen(
                     adaptiveTimerFontSize = adaptiveTimerFontSize,
                     viewModel = viewModel,
                     onOpenHamburgerMenu = { isHamburgerMenuOpen = true },
-                    onOpenTimerConfig = { isTimerConfigOpen = true }
+                    onOpenTimerConfig = { isTimerConfigOpen = true },
+                    onOpenPresets = { isPresetsOpen = true }
                 )
             }
         }
@@ -164,6 +171,24 @@ fun TimerScreen(
                 },
                 onResetTimer = { viewModel.resetTimer() }
             )
+
+            // Preset modal
+            PresetModal(
+                isOpen = isPresetsOpen,
+                onClose = { isPresetsOpen = false },
+                currentConfig = timerStatus.config,
+                onPresetSelected = { preset ->
+                    viewModel.updateConfigAndReset(
+                        workTimeSeconds = preset.workTimeSeconds,
+                        restTimeSeconds = preset.restTimeSeconds,
+                        totalRounds = preset.totalRounds,
+                        isUnlimited = preset.isUnlimited,
+                        noRest = preset.noRest,
+                        countdownDurationSeconds = timerStatus.config.countdownDurationSeconds
+                    )
+                    isPresetsOpen = false
+                }
+            )
         }
     }
 }
@@ -181,7 +206,8 @@ private fun PortraitTimerLayout(
     adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit,
     viewModel: TimerViewModel,
     onOpenHamburgerMenu: () -> Unit,
-    onOpenTimerConfig: () -> Unit
+    onOpenTimerConfig: () -> Unit,
+    onOpenPresets: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -194,7 +220,8 @@ private fun PortraitTimerLayout(
         TimerHeader(
             adaptiveSpacing = adaptiveSpacing,
             onOpenHamburgerMenu = onOpenHamburgerMenu,
-            onOpenTimerConfig = onOpenTimerConfig
+            onOpenTimerConfig = onOpenTimerConfig,
+            onOpenPresets = onOpenPresets
         )
 
         Spacer(modifier = Modifier.height(adaptiveSpacing * 2))
@@ -237,7 +264,8 @@ private fun LandscapeTimerLayout(
     adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit,
     viewModel: TimerViewModel,
     onOpenHamburgerMenu: () -> Unit,
-    onOpenTimerConfig: () -> Unit
+    onOpenTimerConfig: () -> Unit,
+    onOpenPresets: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -250,6 +278,7 @@ private fun LandscapeTimerLayout(
             adaptiveSpacing = adaptiveSpacing,
             onOpenHamburgerMenu = onOpenHamburgerMenu,
             onOpenTimerConfig = onOpenTimerConfig,
+            onOpenPresets = onOpenPresets,
             isCompact = true
         )
 
@@ -304,6 +333,7 @@ private fun TimerHeader(
     adaptiveSpacing: Dp,
     onOpenHamburgerMenu: () -> Unit,
     onOpenTimerConfig: () -> Unit,
+    onOpenPresets: () -> Unit,
     isCompact: Boolean = false
 ) {
     Row(
@@ -333,11 +363,23 @@ private fun TimerHeader(
             )
         }
 
-        // Timer configuration button (FR-016: Settings UI Reorganization)
-        TimerConfigButton(
-            onClick = onOpenTimerConfig,
-            modifier = Modifier.size(MinTouchTargetSize)
-        )
+        // Right side button group
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(adaptiveSpacing / 2)
+        ) {
+            // Preset button
+            PresetButton(
+                onClick = onOpenPresets,
+                modifier = Modifier.size(MinTouchTargetSize)
+            )
+            
+            // Timer configuration button (FR-016: Settings UI Reorganization)
+            TimerConfigButton(
+                onClick = onOpenTimerConfig,
+                modifier = Modifier.size(MinTouchTargetSize)
+            )
+        }
     }
 }
 
@@ -407,6 +449,15 @@ private fun TimerDisplay(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Show config recap when timer is stopped
+        if (timerStatus.state == TimerState.STOPPED) {
+            ConfigRecapDisplay(
+                config = timerStatus.config,
+                adaptiveSpacing = adaptiveSpacing
+            )
+            Spacer(modifier = Modifier.height(adaptiveSpacing * 2))
+        }
+
         // Interval type indicator with special handling for BEGIN countdown
         Card(
             modifier = Modifier.padding(bottom = adaptiveSpacing * 2),
@@ -612,6 +663,101 @@ private fun TimerButton(
                 modifier = Modifier.size(24.dp), // FR-020: Minimum 24dp icon size
                 tint = MaterialTheme.colorScheme.onSurface
             )
+        }
+    }
+}
+
+/**
+ * Configuration recap display component
+ * Shows current timer configuration when timer is not started
+ */
+@Composable
+private fun ConfigRecapDisplay(
+    config: TimerConfig,
+    adaptiveSpacing: Dp
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(adaptiveSpacing * 2),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(adaptiveSpacing / 2)
+        ) {
+            Text(
+                text = "Workout Configuration",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(adaptiveSpacing / 2))
+            
+            // Work time
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(adaptiveSpacing),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Work:",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+                Text(
+                    text = "${config.workTimeSeconds}s",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            // Rest time (if not no-rest mode)
+            if (!config.noRest) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(adaptiveSpacing),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Rest:",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                    Text(
+                        text = "${config.restTimeSeconds}s",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                Text(
+                    text = "No Rest",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            // Rounds
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(adaptiveSpacing),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Rounds:",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+                Text(
+                    text = if (config.isUnlimited) "Unlimited" else "${config.totalRounds}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
