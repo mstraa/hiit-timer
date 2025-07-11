@@ -77,6 +77,35 @@ data class ComplexTimerState(
     }
     
     /**
+     * Get next exercise
+     */
+    fun getNextExercise(workout: ComplexWorkout): Exercise? {
+        val phase = getCurrentPhase(workout) ?: return null
+        
+        return when {
+            // For AMRAP phases, get next in rotation
+            phase.amrapDurationSeconds != null -> {
+                val nextIndex = (amrapCurrentExerciseIndex + 1) % phase.exercises.size
+                phase.exercises.getOrNull(nextIndex)
+            }
+            // For regular phases
+            else -> {
+                // Check if there's a next exercise in current phase
+                if (currentExerciseIndex + 1 < phase.exercises.size) {
+                    phase.exercises.getOrNull(currentExerciseIndex + 1)
+                } else if (currentPhaseRound < phase.rounds) {
+                    // Next round of same phase, get first exercise
+                    phase.exercises.firstOrNull()
+                } else {
+                    // Check next phase
+                    val nextPhase = workout.phases.getOrNull(currentPhaseIndex + 1)
+                    nextPhase?.exercises?.firstOrNull()
+                }
+            }
+        }
+    }
+    
+    /**
      * Calculate remaining time for current interval
      */
     fun getRemainingSeconds(workout: ComplexWorkout): Int? {

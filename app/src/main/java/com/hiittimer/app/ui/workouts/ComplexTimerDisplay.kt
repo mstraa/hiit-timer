@@ -20,6 +20,12 @@ import com.hiittimer.app.data.WorkoutMode
 import com.hiittimer.app.timer.UnifiedTimerState
 import com.hiittimer.app.ui.theme.HIITColors
 
+private fun formatTime(seconds: Int): String {
+    val minutes = seconds / 60
+    val secs = seconds % 60
+    return String.format("%02d:%02d", minutes, secs)
+}
+
 /**
  * Display component for complex workouts
  */
@@ -70,24 +76,11 @@ fun ComplexTimerDisplay(
 private fun BeginCountdownDisplay(
     state: UnifiedTimerState
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        // Phase indicator pill showing "Begin"
-        PhaseIndicatorPill(
-            timerState = state.timerState,
-            intervalType = state.intervalType,
-            statusText = "Begin",
-            isLarge = true
-        )
-        
-        // Next phase info
-        NextPhaseInfo(state = state)
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // Large countdown number
+        // Large countdown number - exactly centered
         Text(
             text = state.displayTime,
             style = MaterialTheme.typography.displayLarge.copy(
@@ -98,6 +91,43 @@ private fun BeginCountdownDisplay(
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
+        
+        // Other elements positioned around the countdown
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Phase indicator pill showing "Begin"
+                    PhaseIndicatorPill(
+                        timerState = state.timerState,
+                        intervalType = state.intervalType,
+                        statusText = "Begin",
+                        isLarge = true
+                    )
+                    
+                    // Next phase info
+                    NextPhaseInfo(state = state)
+                    
+                    Spacer(modifier = Modifier.height(120.dp)) // Space for countdown
+                }
+            }
+            
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            )
+        }
     }
 }
 
@@ -109,40 +139,11 @@ private fun WorkoutActiveDisplay(
     onSkipClick: () -> Unit,
     onRepCompleted: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        // Phase indicator pill showing Work/Rest
-        PhaseIndicatorPill(
-            timerState = state.timerState,
-            intervalType = state.intervalType,
-            statusText = when (state.intervalType) {
-                IntervalType.WORK -> "Work"
-                IntervalType.REST -> "Rest"
-                else -> state.statusText
-            },
-            isLarge = true
-        )
-        
-        // Next phase info
-        NextPhaseInfo(state = state)
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // Exercise name (only if available)
-        if (state.currentExerciseName != null) {
-            Text(
-                text = if (state.intervalType == IntervalType.REST) "-" else state.currentExerciseName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-        
-        // Main timer display (larger)
+        // Main timer display - exactly centered
         Text(
             text = state.displayTime,
             style = MaterialTheme.typography.displayLarge.copy(
@@ -154,35 +155,96 @@ private fun WorkoutActiveDisplay(
             textAlign = TextAlign.Center
         )
         
-        // Progress info (phase or round)
-        Text(
-            text = state.progressText,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            modifier = Modifier.padding(top = 16.dp)
-        )
-        
-        // Exercise mode specific info (compact)
-        when (state.exerciseMode) {
-            WorkoutMode.AMRAP -> {
-                Text(
-                    text = "AMRAP - Rounds: ${state.amrapRounds}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-            WorkoutMode.REP_BASED, WorkoutMode.FOR_TIME -> {
-                if (state.needsRepInput) {
-                    Text(
-                        text = "Tap ✓ when rep completed",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(top = 8.dp)
+        // Other elements positioned around the timer
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Top section with phase pill and exercise info
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Phase indicator pill showing Work/Rest
+                    PhaseIndicatorPill(
+                        timerState = state.timerState,
+                        intervalType = state.intervalType,
+                        statusText = when (state.intervalType) {
+                            IntervalType.WORK -> "Work"
+                            IntervalType.REST -> "Rest"
+                            else -> state.statusText
+                        },
+                        isLarge = true
                     )
+                    
+                    // Next phase info
+                    NextPhaseInfo(state = state)
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    // Exercise name (only if available)
+                    if (state.currentExerciseName != null) {
+                        Text(
+                            text = if (state.intervalType == IntervalType.REST) "-" else state.currentExerciseName,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(120.dp)) // Space for timer
                 }
             }
-            else -> {}
+            
+            // Bottom section with progress info
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(top = 80.dp)
+                ) {
+                    // Progress info (phase or round)
+                    Text(
+                        text = state.progressText,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                    
+                    // Exercise mode specific info (compact)
+                    when (state.exerciseMode) {
+                        WorkoutMode.AMRAP -> {
+                            Text(
+                                text = "AMRAP - Rounds: ${state.amrapRounds}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                        WorkoutMode.REP_BASED, WorkoutMode.FOR_TIME -> {
+                            if (state.needsRepInput) {
+                                Text(
+                                    text = "Tap ✓ when rep completed",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            }
         }
     }
 }
@@ -335,14 +397,24 @@ private fun NextPhaseInfo(state: UnifiedTimerState) {
     val nextPhaseInfo = when {
         state.timerState == TimerState.BEGIN -> {
             if (state.currentExerciseName != null) {
-                "${state.currentExerciseName} - 00:30" // Default work time, should be dynamic
+                "${state.currentExerciseName} - ${formatTime(state.timeRemainingSeconds)}"
             } else {
-                "Work - 00:30" // Default work time
+                "Work - ${formatTime(state.timeRemainingSeconds)}"
             }
         }
-        state.intervalType == IntervalType.WORK -> "Rest - 00:15" // Default rest time
+        state.intervalType == IntervalType.WORK -> {
+            if (state.nextExerciseName != null) {
+                "Rest - ${formatTime(15)}" // Show rest time
+            } else {
+                "Rest - ${formatTime(15)}"
+            }
+        }
         state.intervalType == IntervalType.REST -> {
-            "Work - 00:30"
+            if (state.nextExerciseName != null) {
+                "${state.nextExerciseName} - ${formatTime(30)}" // Show next exercise
+            } else {
+                "Work - ${formatTime(30)}"
+            }
         }
         else -> null
     }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ArrowForward
@@ -47,7 +48,6 @@ fun TimerScreen(
     val audioSettings by viewModel.audioSettings.collectAsState()
 
     // State for new UI components
-    var showAudioModal by remember { mutableStateOf(false) }
     var showConfigModal by remember { mutableStateOf(false) }
     var showPresetModal by remember { mutableStateOf(false) }
     var showMenuPanel by remember { mutableStateOf(false) }
@@ -66,26 +66,80 @@ fun TimerScreen(
             timerStatus = timerStatus
         )
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(24.dp)
         ) {
             // Top bar
             TimerTopBar(
                 timerState = timerStatus.state,
                 onMenuClick = { showMenuPanel = true },
-                onAudioToggle = { showAudioModal = true },
-                audioSettings = audioSettings
+                onAudioToggle = { viewModel.toggleAudio() },
+                audioSettings = audioSettings,
+                modifier = Modifier.align(Alignment.TopCenter)
             )
 
-            // Main timer display - use ComplexTimerDisplay for complex workouts
-            when (workoutMode) {
-                UnifiedTimerManager.WorkoutMode.COMPLEX -> {
-                    ComplexTimerDisplay(
-                        state = unifiedState,
+            // Main timer display - centered in the middle
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when (workoutMode) {
+                    UnifiedTimerManager.WorkoutMode.COMPLEX -> {
+                        ComplexTimerDisplay(
+                            state = unifiedState,
+                            onPlayPauseClick = {
+                                when (unifiedState.timerState) {
+                                    TimerState.RUNNING -> viewModel.pauseTimer()
+                                    TimerState.PAUSED -> viewModel.resumeTimer()
+                                    else -> viewModel.startTimer()
+                                }
+                            },
+                            onResetClick = { viewModel.resetTimer() },
+                            onSkipClick = { viewModel.skipToNext() },
+                            onRepCompleted = { viewModel.markRepCompleted() }
+                        )
+                    }
+                    UnifiedTimerManager.WorkoutMode.SIMPLE -> {
+                        if (unifiedState.timerState == TimerState.BEGIN) {
+                            // Use ComplexTimerDisplay for BEGIN phase to get the nice countdown UI
+                            ComplexTimerDisplay(
+                                state = unifiedState,
+                                onPlayPauseClick = { viewModel.pauseTimer() },
+                                onResetClick = { viewModel.resetTimer() },
+                                onSkipClick = { /* No skip for simple workouts */ },
+                                onRepCompleted = { /* No reps for simple workouts */ }
+                            )
+                        } else {
+                            SimpleTimerDisplay(
+                                unifiedState = unifiedState
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Bottom controls
+            Box(
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                if (workoutMode == UnifiedTimerManager.WorkoutMode.SIMPLE) {
+                    TimerBottomControls(
+                        timerState = timerStatus.state,
+                        onConfigClick = { showConfigModal = true },
+                        onPresetClick = { showPresetModal = true },
+                        onStartClick = { viewModel.startTimer() },
+                        onPauseClick = { viewModel.pauseTimer() },
+                        onResumeClick = { viewModel.resumeTimer() },
+                        onResetClick = { viewModel.resetTimer() },
+                        onComplexWorkoutClick = onNavigateToWorkouts
+                    )
+                } else {
+                    // Complex workout controls
+                    ComplexWorkoutControls(
+                        timerState = unifiedState.timerState,
                         onPlayPauseClick = {
                             when (unifiedState.timerState) {
                                 TimerState.RUNNING -> viewModel.pauseTimer()
@@ -95,55 +149,10 @@ fun TimerScreen(
                         },
                         onResetClick = { viewModel.resetTimer() },
                         onSkipClick = { viewModel.skipToNext() },
-                        onRepCompleted = { viewModel.markRepCompleted() }
+                        onRepCompleted = { viewModel.markRepCompleted() },
+                        needsRepInput = unifiedState.needsRepInput
                     )
                 }
-                UnifiedTimerManager.WorkoutMode.SIMPLE -> {
-                    if (unifiedState.timerState == TimerState.BEGIN) {
-                        // Use ComplexTimerDisplay for BEGIN phase to get the nice countdown UI
-                        ComplexTimerDisplay(
-                            state = unifiedState,
-                            onPlayPauseClick = { viewModel.pauseTimer() },
-                            onResetClick = { viewModel.resetTimer() },
-                            onSkipClick = { /* No skip for simple workouts */ },
-                            onRepCompleted = { /* No reps for simple workouts */ }
-                        )
-                    } else {
-                        SimpleTimerDisplay(
-                            unifiedState = unifiedState
-                        )
-                    }
-                }
-            }
-
-            // Bottom controls (only for simple workouts)
-            if (workoutMode == UnifiedTimerManager.WorkoutMode.SIMPLE) {
-                TimerBottomControls(
-                    timerState = timerStatus.state,
-                    onConfigClick = { showConfigModal = true },
-                    onPresetClick = { showPresetModal = true },
-                    onStartClick = { viewModel.startTimer() },
-                    onPauseClick = { viewModel.pauseTimer() },
-                    onResumeClick = { viewModel.resumeTimer() },
-                    onResetClick = { viewModel.resetTimer() },
-                    onComplexWorkoutClick = onNavigateToWorkouts
-                )
-            } else {
-                // Complex workout controls
-                ComplexWorkoutControls(
-                    timerState = unifiedState.timerState,
-                    onPlayPauseClick = {
-                        when (unifiedState.timerState) {
-                            TimerState.RUNNING -> viewModel.pauseTimer()
-                            TimerState.PAUSED -> viewModel.resumeTimer()
-                            else -> viewModel.startTimer()
-                        }
-                    },
-                    onResetClick = { viewModel.resetTimer() },
-                    onSkipClick = { viewModel.skipToNext() },
-                    onRepCompleted = { viewModel.markRepCompleted() },
-                    needsRepInput = unifiedState.needsRepInput
-                )
             }
         }
 
@@ -197,23 +206,11 @@ fun TimerScreen(
 private fun SimpleTimerDisplay(
     unifiedState: UnifiedTimerState
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth()
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        // Phase indicator pill (bigger, replaces status text)
-        PhaseIndicatorPill(
-            timerState = unifiedState.timerState,
-            intervalType = unifiedState.intervalType,
-            statusText = unifiedState.statusText,
-            isLarge = true
-        )
-        
-        // Next phase info
-        NextPhaseInfo(state = unifiedState)
-
-        // Main timer display
+        // Main timer display - exactly centered
         Text(
             text = unifiedState.displayTime,
             style = MaterialTheme.typography.displayLarge.copy(
@@ -224,14 +221,52 @@ private fun SimpleTimerDisplay(
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
-
-        // Progress info
-        Text(
-            text = unifiedState.progressText,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            modifier = Modifier.padding(top = 16.dp)
-        )
+        
+        // Other elements positioned around the timer
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Phase indicator pill (positioned above timer)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    PhaseIndicatorPill(
+                        timerState = unifiedState.timerState,
+                        intervalType = unifiedState.intervalType,
+                        statusText = unifiedState.statusText,
+                        isLarge = true
+                    )
+                    
+                    // Next phase info
+                    NextPhaseInfo(state = unifiedState)
+                    
+                    Spacer(modifier = Modifier.height(120.dp)) // Space for timer
+                }
+            }
+            
+            // Progress info (positioned below timer)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Text(
+                    text = unifiedState.progressText,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 80.dp)
+                )
+            }
+        }
     }
 }
 
@@ -240,10 +275,11 @@ private fun TimerTopBar(
     timerState: TimerState,
     onMenuClick: () -> Unit,
     onAudioToggle: () -> Unit,
-    audioSettings: com.hiittimer.app.audio.AudioSettings
+    audioSettings: com.hiittimer.app.audio.AudioSettings,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         HamburgerMenuButton(onClick = onMenuClick)
@@ -278,22 +314,13 @@ private fun TimerBottomControls(
             PresetButton(onClick = onPresetClick)
             
             // Complex workout button (icon)
-            OutlinedButton(
-                onClick = onComplexWorkoutClick,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .height(48.dp)
-                    .width(48.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White
-                ),
-                border = BorderStroke(1.dp, Color.White)
+            IconButton(
+                onClick = onComplexWorkoutClick
             ) {
                 Icon(
                     imageVector = Icons.Default.List,
                     contentDescription = "Workouts",
-                    modifier = Modifier.size(24.dp)
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -312,8 +339,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Text(
@@ -331,8 +358,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Text(
@@ -350,8 +377,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Text(
@@ -367,10 +394,10 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.Black,
-                            contentColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         ),
-                        border = BorderStroke(1.dp, Color.White)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -387,8 +414,8 @@ private fun TimerBottomControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Text(
@@ -549,10 +576,10 @@ private fun ComplexWorkoutControls(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    border = BorderStroke(1.dp, Color.White)
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowForward,
@@ -571,8 +598,8 @@ private fun ComplexWorkoutControls(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(
@@ -612,10 +639,10 @@ private fun ComplexWorkoutControls(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    border = BorderStroke(1.dp, Color.White)
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,

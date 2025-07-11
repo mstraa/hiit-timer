@@ -233,6 +233,7 @@ data class UnifiedTimerState(
     // Complex workout fields
     val currentPhaseName: String? = null,
     val currentExerciseName: String? = null,
+    val nextExerciseName: String? = null,
     val currentPhaseIndex: Int = 0,
     val totalPhases: Int = 0,
     val statusText: String = "",
@@ -308,6 +309,7 @@ data class UnifiedTimerState(
             
             val phase = state.getCurrentPhase(workout)
             val exercise = state.getCurrentExercise(workout)
+            val nextExercise = state.getNextExercise(workout)
             val remaining = state.getRemainingSeconds(workout)
             
             val displayTime = when {
@@ -338,6 +340,7 @@ data class UnifiedTimerState(
                 intervalType = if (state.isInRestPeriod) IntervalType.REST else IntervalType.WORK,
                 currentPhaseName = phase?.name,
                 currentExerciseName = exercise?.name,
+                nextExerciseName = nextExercise?.name,
                 currentPhaseIndex = state.currentPhaseIndex,
                 totalPhases = workout.phases.size,
                 statusText = state.getStatusText(workout),
