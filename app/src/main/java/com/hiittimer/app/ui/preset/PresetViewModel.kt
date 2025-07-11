@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hiittimer.app.data.InMemoryPresetRepository
 import com.hiittimer.app.data.Preset
+import com.hiittimer.app.data.ComplexPreset
 import com.hiittimer.app.data.PresetRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,9 @@ class PresetViewModel(
     
     private val _presets = MutableStateFlow<List<Preset>>(emptyList())
     val presets: StateFlow<List<Preset>> = _presets.asStateFlow()
+    
+    private val _complexPresets = MutableStateFlow<List<ComplexPreset>>(emptyList())
+    val complexPresets: StateFlow<List<ComplexPreset>> = _complexPresets.asStateFlow()
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -32,6 +36,7 @@ class PresetViewModel(
             _isLoading.value = true
             try {
                 _presets.value = repository.getAllPresets()
+                _complexPresets.value = repository.getAllComplexPresets()
                 _error.value = null
             } catch (e: Exception) {
                 _error.value = e.message
@@ -74,6 +79,42 @@ class PresetViewModel(
             loadPresets()
         } catch (e: Exception) {
             _error.value = e.message
+        }
+    }
+    
+    suspend fun saveComplexPreset(preset: ComplexPreset) {
+        try {
+            repository.saveComplexPreset(preset)
+            loadPresets()
+        } catch (e: Exception) {
+            _error.value = e.message
+        }
+    }
+    
+    suspend fun updateComplexPreset(preset: ComplexPreset) {
+        try {
+            repository.updateComplexPreset(preset)
+            loadPresets()
+        } catch (e: Exception) {
+            _error.value = e.message
+        }
+    }
+    
+    suspend fun deleteComplexPreset(id: String) {
+        try {
+            repository.deleteComplexPreset(id)
+            loadPresets()
+        } catch (e: Exception) {
+            _error.value = e.message
+        }
+    }
+    
+    suspend fun getComplexPresetById(id: String): ComplexPreset? {
+        return try {
+            repository.getComplexPresetById(id)
+        } catch (e: Exception) {
+            _error.value = e.message
+            null
         }
     }
     

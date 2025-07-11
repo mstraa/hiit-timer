@@ -184,7 +184,8 @@ fun TimerScreen(
                         totalRounds = preset.totalRounds,
                         isUnlimited = preset.isUnlimited,
                         noRest = preset.noRest,
-                        countdownDurationSeconds = timerStatus.config.countdownDurationSeconds
+                        countdownDurationSeconds = timerStatus.config.countdownDurationSeconds,
+                        preset = preset
                     )
                     isPresetsOpen = false
                 }
@@ -285,6 +286,43 @@ private fun LandscapeTimerLayout(
 
         Spacer(modifier = Modifier.height(height = adaptiveSpacing))
 
+        // State indicator at the top (only when timer is active)
+        if (timerStatus.state != TimerState.STOPPED) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Interval type indicator with special handling for BEGIN countdown
+                Card(
+                    modifier = Modifier.padding(bottom = adaptiveSpacing),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (timerStatus.isBegin) {
+                            Color.Blue.copy(alpha = 0.1f)
+                        } else {
+                            intervalColor.copy(alpha = 0.1f)
+                        }
+                    )
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = adaptiveSpacing * 3, vertical = adaptiveSpacing)
+                    ) {
+                        val activityName = viewModel.getCurrentActivityName()
+                        Text(
+                            text = activityName,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = if (timerStatus.isBegin) {
+                                Color.Blue
+                            } else {
+                                intervalColor
+                            },
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
         // Main content in row layout for landscape
         Row(
             modifier = Modifier
@@ -292,10 +330,10 @@ private fun LandscapeTimerLayout(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(adaptiveSpacing * 2)
         ) {
-            // Timer display (60% width)
+            // Timer display (65% width for better prominence)
             Box(
                 modifier = Modifier
-                    .weight(0.6f)
+                    .weight(0.65f)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
@@ -303,15 +341,16 @@ private fun LandscapeTimerLayout(
                     timerStatus = timerStatus,
                     intervalColor = intervalColor,
                     adaptiveSpacing = adaptiveSpacing,
-                    adaptiveTimerFontSize = adaptiveTimerFontSize,
-                    viewModel = viewModel
+                    adaptiveTimerFontSize = adaptiveTimerFontSize * 1.3f, // 30% larger in landscape
+                    viewModel = viewModel,
+                    isLandscape = true
                 )
             }
 
-            // Controls (40% width)
+            // Controls (35% width)
             Box(
                 modifier = Modifier
-                    .weight(0.4f)
+                    .weight(0.35f)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
@@ -446,7 +485,8 @@ private fun TimerDisplay(
     intervalColor: Color,
     adaptiveSpacing: Dp,
     adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit,
-    viewModel: TimerViewModel
+    viewModel: TimerViewModel,
+    isLandscape: Boolean = false
 ) {
     if (timerStatus.state == TimerState.STOPPED) {
         // Show config recap and big start button when timer is stopped
@@ -486,12 +526,41 @@ private fun TimerDisplay(
         }
     } else {
         // Center the timer display when running
-        TimerCenterDisplay(
-            timerStatus = timerStatus,
-            intervalColor = intervalColor,
-            adaptiveSpacing = adaptiveSpacing,
-            adaptiveTimerFontSize = adaptiveTimerFontSize
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Show complex preset indicator if active
+            val progressText = viewModel.getEnhancedProgressText()
+            
+            // If we have a complex preset active (indicated by different progress text)
+            if (progressText != timerStatus.getRoundProgressText() && progressText.contains(" - ")) {
+                Card(
+                    modifier = Modifier
+                        .padding(bottom = adaptiveSpacing * 2),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = "Complex Workout Active",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+            
+            TimerCenterDisplay(
+                timerStatus = timerStatus,
+                intervalColor = intervalColor,
+                adaptiveSpacing = adaptiveSpacing,
+                adaptiveTimerFontSize = adaptiveTimerFontSize,
+                isLandscape = isLandscape,
+                viewModel = viewModel
+            )
+        }
     }
 }
 
@@ -503,38 +572,48 @@ private fun TimerCenterDisplay(
     timerStatus: TimerStatus,
     intervalColor: Color,
     adaptiveSpacing: Dp,
-    adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit
+    adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit,
+    isLandscape: Boolean = false,
+    viewModel: TimerViewModel? = null
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Interval type indicator with special handling for BEGIN countdown
-        Card(
-            modifier = Modifier.padding(bottom = adaptiveSpacing * 2),
-            colors = CardDefaults.cardColors(
-                containerColor = if (timerStatus.isBegin) {
-                    Color.Blue.copy(alpha = 0.1f)
-                } else {
-                    intervalColor.copy(alpha = 0.1f)
+        // Interval type indicator only in portrait mode (moved to top in landscape)
+        if (!isLandscape) {
+            Card(
+                modifier = Modifier.padding(bottom = adaptiveSpacing * 2),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (timerStatus.isBegin) {
+                        Color.Blue.copy(alpha = 0.1f)
+                    } else {
+                        intervalColor.copy(alpha = 0.1f)
+                    }
+                )
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = adaptiveSpacing * 2, vertical = adaptiveSpacing)
+                ) {
+                    val activityName = viewModel?.getCurrentActivityName() ?: when {
+                        timerStatus.isBegin -> timerStatus.getCountdownDisplayText() ?: "BEGIN"
+                        timerStatus.isWorkInterval -> stringResource(R.string.work)
+                        else -> stringResource(R.string.rest)
+                    }
+                    
+                    Text(
+                        text = activityName,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = if (timerStatus.isBegin) {
+                            Color.Blue
+                        } else {
+                            intervalColor
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-            )
-        ) {
-            Text(
-                text = when {
-                    timerStatus.isBegin -> timerStatus.getCountdownDisplayText() ?: "BEGIN"
-                    timerStatus.isWorkInterval -> stringResource(R.string.work)
-                    else -> stringResource(R.string.rest)
-                },
-                modifier = Modifier.padding(horizontal = adaptiveSpacing * 2, vertical = adaptiveSpacing),
-                style = MaterialTheme.typography.headlineMedium,
-                color = if (timerStatus.isBegin) {
-                    Color.Blue
-                } else {
-                    intervalColor
-                },
-                fontWeight = FontWeight.Bold
-            )
+            }
         }
 
         // Large timer display with adaptive font size and smaller deciseconds
@@ -552,14 +631,16 @@ private fun TimerCenterDisplay(
         Spacer(modifier = Modifier.height(adaptiveSpacing * 2))
 
         // Round progress
+        val progressText = viewModel?.getEnhancedProgressText() ?: timerStatus.getRoundProgressText()
         Text(
-            text = timerStatus.getRoundProgressText(),
+            text = progressText,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
         )
 
         // Next interval preview (FR-005: Always visible during running)
-        timerStatus.getNextIntervalPreview()?.let { preview: String ->
+        val nextPreview = viewModel?.getEnhancedNextPreview() ?: timerStatus.getNextIntervalPreview()
+        nextPreview?.let { preview: String ->
             Spacer(modifier = Modifier.height(height = adaptiveSpacing))
             Card(
                 colors = CardDefaults.cardColors(

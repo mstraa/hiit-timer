@@ -34,6 +34,16 @@ All PRD requirements have been successfully implemented with professional-grade 
 - ✅ **Personal Records**: Track longest sessions and most rounds completed
 - ✅ **Data Export**: Export workout data as CSV for external analysis
 
+## Privacy & Security
+
+This app respects your privacy:
+- **No Ads**: Completely ad-free experience
+- **No Tracking**: No analytics or telemetry
+- **No Internet**: Works completely offline
+- **No Permissions**: Only requires basic Android permissions
+- **Local Storage**: All data stays on your device
+- **Open Source**: Licensed under Apache 2.0
+
 ## Technical Stack
 
 - **Language**: Kotlin
@@ -201,4 +211,4 @@ Test reports are generated at: `app/build/reports/tests/testDebugUnitTest/index.
 
 ## License
 
-This project is part of a development exercise following the PRD specifications.
+This project is licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for details.

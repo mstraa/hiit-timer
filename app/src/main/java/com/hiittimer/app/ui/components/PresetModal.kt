@@ -21,6 +21,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hiittimer.app.data.Preset
+import com.hiittimer.app.data.ComplexPreset
 import com.hiittimer.app.data.TimerConfig
 import com.hiittimer.app.ui.preset.PresetViewModel
 import kotlinx.coroutines.launch
@@ -42,6 +43,9 @@ fun PresetModal(
     var presetToEdit by remember { mutableStateOf<Preset?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var presetToDelete by remember { mutableStateOf<Preset?>(null) }
+    var showComplexCreateDialog by remember { mutableStateOf(false) }
+    var showComplexEditDialog by remember { mutableStateOf(false) }
+    var complexPresetToEdit by remember { mutableStateOf<ComplexPreset?>(null) }
 
     if (isOpen) {
         Dialog(
@@ -88,21 +92,41 @@ fun PresetModal(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Create new preset button
-                    Button(
-                        onClick = { showCreateDialog = true },
+                    // Create preset buttons
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Create New Preset")
+                        // Simple preset button
+                        Button(
+                            onClick = { showCreateDialog = true },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Simple Preset")
+                        }
+                        
+                        // Complex preset button
+                        OutlinedButton(
+                            onClick = { showComplexCreateDialog = true },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Complex Preset")
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -132,23 +156,51 @@ fun PresetModal(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(presets) { preset ->
-                                PresetCard(
-                                    preset = preset,
-                                    onUsePreset = { 
-                                        coroutineScope.launch {
-                                            viewModel.markPresetAsUsed(preset)
-                                            onPresetSelected(preset)
+                                if (preset.isComplex) {
+                                    // Show complex preset card with additional info
+                                    ComplexPresetCard(
+                                        preset = preset,
+                                        onUsePreset = { 
+                                            coroutineScope.launch {
+                                                viewModel.markPresetAsUsed(preset)
+                                                onPresetSelected(preset)
+                                            }
+                                        },
+                                        onEditPreset = { 
+                                            coroutineScope.launch {
+                                                preset.complexPresetId?.let { id ->
+                                                    val complexPreset = viewModel.getComplexPresetById(id)
+                                                    complexPreset?.let {
+                                                        complexPresetToEdit = it
+                                                        showComplexEditDialog = true
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        onDeletePreset = { 
+                                            presetToDelete = preset
+                                            showDeleteDialog = true
                                         }
-                                    },
-                                    onEditPreset = { 
-                                        presetToEdit = preset
-                                        showEditDialog = true
-                                    },
-                                    onDeletePreset = { 
-                                        presetToDelete = preset
-                                        showDeleteDialog = true
-                                    }
-                                )
+                                    )
+                                } else {
+                                    PresetCard(
+                                        preset = preset,
+                                        onUsePreset = { 
+                                            coroutineScope.launch {
+                                                viewModel.markPresetAsUsed(preset)
+                                                onPresetSelected(preset)
+                                            }
+                                        },
+                                        onEditPreset = { 
+                                            presetToEdit = preset
+                                            showEditDialog = true
+                                        },
+                                        onDeletePreset = { 
+                                            presetToDelete = preset
+                                            showDeleteDialog = true
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -198,11 +250,53 @@ fun PresetModal(
                 },
                 onConfirm = {
                     coroutineScope.launch {
-                        viewModel.deletePreset(presetToDelete!!.id)
+                        presetToDelete?.let { preset ->
+                            if (preset.isComplex && preset.complexPresetId != null) {
+                                // Delete complex preset (which also removes simple preset reference)
+                                viewModel.deleteComplexPreset(preset.complexPresetId)
+                            } else {
+                                // Delete simple preset
+                                viewModel.deletePreset(preset.id)
+                            }
+                        }
                         showDeleteDialog = false
                         presetToDelete = null
                     }
                 }
+            )
+        }
+        
+        // Complex preset creation dialog
+        if (showComplexCreateDialog) {
+            ComplexPresetDialog(
+                isOpen = true,
+                onDismiss = { showComplexCreateDialog = false },
+                onSave = { complexPreset ->
+                    coroutineScope.launch {
+                        // Save the complex preset
+                        viewModel.saveComplexPreset(complexPreset)
+                        showComplexCreateDialog = false
+                    }
+                }
+            )
+        }
+        
+        // Complex preset edit dialog
+        if (showComplexEditDialog && complexPresetToEdit != null) {
+            ComplexPresetDialog(
+                isOpen = true,
+                onDismiss = { 
+                    showComplexEditDialog = false
+                    complexPresetToEdit = null
+                },
+                onSave = { complexPreset ->
+                    coroutineScope.launch {
+                        viewModel.updateComplexPreset(complexPreset)
+                        showComplexEditDialog = false
+                        complexPresetToEdit = null
+                    }
+                },
+                presetToEdit = complexPresetToEdit
             )
         }
     }
@@ -513,3 +607,4 @@ fun EditPresetDialog(
         }
     )
 }
+

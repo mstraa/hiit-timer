@@ -1,0 +1,41 @@
+HIIT Timer is a comprehensive, production-ready interval training timer for Android that helps you achieve your fitness goals with precision and ease.
+
+<b>Key Features:</b>
+
+• <b>Precise Timer</b>: Millisecond precision timing with visual and audio cues
+• <b>Customizable Intervals</b>: Set work time (5-900s) and rest time (5-300s)
+• <b>Round Management</b>: Support for 1-99 rounds or unlimited mode
+• <b>Workout Presets</b>: Save and manage custom workout configurations
+• <b>Complex Workouts</b>: Create multi-phase workouts with different exercises
+• <b>Workout History</b>: Track your progress with detailed session analytics
+• <b>Background Operation</b>: Keep timing even when app is in background
+• <b>True Fullscreen</b>: Immersive workout experience without distractions
+• <b>Audio Feedback</b>: Configurable sound effects for interval transitions
+• <b>Dark/Light Theme</b>: Automatic system theme detection
+• <b>No-Rest Mode</b>: Option for continuous work intervals
+• <b>Export Data</b>: Export workout history as CSV for analysis
+
+<b>Perfect for:</b>
+• HIIT (High-Intensity Interval Training)
+• Tabata workouts
+• Circuit training
+• EMOM (Every Minute on the Minute)
+• Custom interval workouts
+
+<b>Privacy First:</b>
+• No ads
+• No tracking
+• No analytics
+• No internet connection required
+• Your data stays on your device
+
+<b>Professional Quality:</b>
+• Material Design 3 interface
+• Battery-optimized performance
+• Reliable background operation
+• Comprehensive error handling
+• Thoroughly tested
+
+Whether you're a fitness enthusiast, athlete, or trainer, HIIT Timer provides all the tools you need for effective interval training. The app is designed to be simple yet powerful, with an intuitive interface that doesn't get in the way of your workout.
+
+Start your fitness journey today with HIIT Timer - the professional interval timer that respects your privacy and delivers results.

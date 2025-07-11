@@ -6,6 +6,7 @@
 - **Task**: Add a recap of the config when timer is not started
 - **Description**: Display current settings summary on timer screen so users can see their configuration at a glance
 - **Priority**: Medium
+- **State**: DONE
 
 ### 2. Basic Preset Functionality
 - **Task**: Add a preset icon under the cog and implement basic preset functionality
@@ -15,15 +16,21 @@
   - Include all configuration fields with a title for each preset
   - When applied, change the current configuration to the preset configuration
 - **Priority**: High
+- **State**: DONE
+
 
 ### 3. Complex Presets with Multiple Round Groups
 - **Task**: Add complex preset support with multiple groups of rounds
 - **Description**:
   - Add support for multiple groups of rounds within a single preset
   - Add title and description for each round group
+  - add title and description for each work phase
+  - Add a special rest time between round groups
+  - Remove the next rest time if there is a spécial rest time between round groups next or if the next phase is ; FINISHED
   - Rework the app to display these new informations throughout the UI
   - Update timer logic to handle complex workout structures
 - **Priority**: High
+- **State**: DONE (core infrastructure complete, UI for creation pending)
 
 ### 4. Landscape Layout Improvements
 - **Task**: Rework the landscape layout for better usability
@@ -32,19 +39,23 @@
   - Make the timer display bigger and more prominent
   - Optimize layout for landscape orientation
 - **Priority**: Medium
+- **State**: DONE
+
 
 ### 5. F-Droid Compliance Tasks
 - **Task**: Make app ready for F-Droid submission
 - **Description**: 
-  - Add LICENSE file to repository root with FSF-approved open-source license (GPL-3.0, MIT, Apache-2.0, etc.)
-  - Create F-Droid metadata structure with fastlane directory and app description
+  - Add LICENSE file to repository root with FSF-approved open-source license (GPL-3.0, MIT, Apache-2.0, etc.) ✅
+  - Create F-Droid metadata structure with fastlane directory and app description ✅
   - Add screenshots for F-Droid store listing in fastlane/metadata/android/en-US/images/
-  - Create app description files for F-Droid (short_description.txt, full_description.txt)
+  - Create app description files for F-Droid (short_description.txt, full_description.txt) ✅
   - Verify build reproducibility by testing build process on clean environment
-  - Add clear statement about no tracking/analytics in README.md
+  - Add clear statement about no tracking/analytics in README.md ✅
   - Submit app to F-Droid by creating merge request on fdroiddata repository
-- **Priority**: Low (especially LICENSE file)
-- **Status**: App is 95% compliant - only missing LICENSE file is blocking submission
+- **Priority**: Low
+- **Status**: App is ready for F-Droid submission - only missing screenshots
+- **State**: MOSTLY DONE (screenshots pending)
+
 
 ## Notes
 Choose any of these tasks to work on during our next session. Tasks are organized by priority but can be tackled in any order based on your preferences.

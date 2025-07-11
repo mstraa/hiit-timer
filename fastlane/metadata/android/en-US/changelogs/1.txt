@@ -1,0 +1,12 @@
+Initial Release
+
+• Core timer functionality with work/rest intervals
+• Customizable rounds and timing
+• Visual and audio feedback
+• Workout presets
+• Complex multi-phase workouts
+• Workout history tracking
+• Background operation
+• Fullscreen mode
+• Dark/light theme support
+• Export workout data

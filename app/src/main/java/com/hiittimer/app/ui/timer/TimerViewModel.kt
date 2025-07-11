@@ -9,6 +9,7 @@ import com.hiittimer.app.data.*
 import com.hiittimer.app.performance.PerformanceManager
 import com.hiittimer.app.service.TimerServiceConnection
 import com.hiittimer.app.timer.TimerManager
+import com.hiittimer.app.timer.ComplexTimerManager
 import com.hiittimer.app.utils.Logger
 import com.hiittimer.app.error.ErrorHandler
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +34,10 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     private val fallbackAudioManager = AudioManager(application, preferencesManager.audioSettings.value)
     private val fallbackWorkoutHistoryRepository = InMemoryWorkoutHistoryRepository()
     private val fallbackPerformanceManager = PerformanceManager(application)
-    private val fallbackTimerManager = TimerManager(fallbackAudioManager, fallbackWorkoutHistoryRepository, fallbackPerformanceManager)
+    private val fallbackTimerManager = ComplexTimerManager(fallbackAudioManager, fallbackWorkoutHistoryRepository, fallbackPerformanceManager)
+    
+    // Repository for presets
+    private val presetRepository: PresetRepository = InMemoryPresetRepository()
 
     // Debounce service connection status to prevent rapid switching
     private val stableServiceConnection = serviceConnection.isServiceConnected
@@ -62,6 +66,11 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     val audioSettings: StateFlow<AudioSettings> = preferencesManager.audioSettings
     val themePreference: StateFlow<ThemePreference> = preferencesManager.themePreference
     val isServiceConnected: StateFlow<Boolean> = serviceConnection.isServiceConnected
+    
+    // Enhanced timer information for complex presets
+    fun getCurrentActivityName(): String = fallbackTimerManager.getCurrentActivityName()
+    fun getEnhancedProgressText(): String = fallbackTimerManager.getEnhancedProgressText()
+    fun getEnhancedNextPreview(): String? = fallbackTimerManager.getEnhancedNextPreview()
 
     init {
         // Initialize performance monitoring
@@ -101,6 +110,37 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
      * Start the timer with a preset (FR-010: Session tracking with preset info)
      */
     fun startTimerWithPreset(preset: Preset) {
+        viewModelScope.launch {
+            try {
+                if (preset.isComplex && preset.complexPresetId != null) {
+                    // Load and use complex preset
+                    val complexPreset = presetRepository.getComplexPresetById(preset.complexPresetId)
+                    if (complexPreset != null) {
+                        // First load the complex preset configuration
+                        fallbackTimerManager.updateComplexConfig(complexPreset)
+                        
+                        // Then start the timer
+                        val baseConfig = complexPreset.toSimplePreset().toTimerConfig()
+                        if (serviceConnection.isBound()) {
+                            serviceConnection.startTimer(baseConfig, complexPreset.id, complexPreset.name)
+                        } else {
+                            fallbackTimerManager.start(baseConfig, complexPreset.id, complexPreset.name)
+                        }
+                    } else {
+                        // Fallback to simple preset
+                        startSimplePreset(preset)
+                    }
+                } else {
+                    // Use simple preset
+                    startSimplePreset(preset)
+                }
+            } catch (e: Exception) {
+                Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Failed to start preset: ${e.message}", e)
+            }
+        }
+    }
+    
+    private fun startSimplePreset(preset: Preset) {
         val config = preset.toTimerConfig()
         updateConfig(
             workTimeSeconds = config.workTimeSeconds,
@@ -116,6 +156,7 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
             fallbackTimerManager.start(config, preset.id, preset.name, preset.exerciseName)
         }
     }
+    
     
     /**
      * Pause the timer
@@ -233,6 +274,40 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Load complex preset configuration and prepare timer
+     */
+    private suspend fun loadComplexPresetConfig(preset: Preset) {
+        try {
+            if (preset.isComplex && preset.complexPresetId != null) {
+                val complexPreset = presetRepository.getComplexPresetById(preset.complexPresetId)
+                if (complexPreset != null) {
+                    Logger.d(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Loading complex preset: ${complexPreset.name}")
+                    
+                    // Update timer manager with complex configuration
+                    fallbackTimerManager.updateComplexConfig(complexPreset)
+                    
+                    // Update the base config to reflect the complex preset
+                    val baseConfig = complexPreset.toSimplePreset().toTimerConfig()
+                    if (serviceConnection.isBound()) {
+                        serviceConnection.updateConfig(baseConfig)
+                    } else {
+                        fallbackTimerManager.updateConfig(baseConfig)
+                    }
+                    
+                    // Reset timer to show the new configuration
+                    if (timerStatus.value.canReset) {
+                        resetTimer()
+                    }
+                } else {
+                    Logger.w(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Complex preset not found for ID: ${preset.complexPresetId}")
+                }
+            }
+        } catch (e: Exception) {
+            Logger.e(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Failed to load complex preset: ${e.message}", e)
+        }
+    }
+    
+    /**
      * Update configuration and reset timer to use the new config
      */
     fun updateConfigAndReset(
@@ -241,7 +316,8 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
         totalRounds: Int = timerStatus.value.config.totalRounds,
         isUnlimited: Boolean = timerStatus.value.config.isUnlimited,
         noRest: Boolean = timerStatus.value.config.noRest,
-        countdownDurationSeconds: Int = timerStatus.value.config.countdownDurationSeconds
+        countdownDurationSeconds: Int = timerStatus.value.config.countdownDurationSeconds,
+        preset: Preset? = null
     ) {
         try {
             val newConfig = TimerConfig(
@@ -254,16 +330,24 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
             )
             Logger.d(ErrorHandler.ErrorCategory.TIMER_OPERATION, "Updating config and resetting: work=${workTimeSeconds}s, rest=${restTimeSeconds}s, rounds=${totalRounds}, state=${timerStatus.value.state}")
             
-            // Update config and reset using service if connected, fallback otherwise
-            if (serviceConnection.isBound()) {
-                serviceConnection.updateConfig(newConfig)
-                if (timerStatus.value.canReset) {
-                    serviceConnection.resetTimer()
+            // Handle complex preset if provided
+            if (preset != null && preset.isComplex) {
+                // Load complex preset configuration
+                viewModelScope.launch {
+                    loadComplexPresetConfig(preset)
                 }
             } else {
-                fallbackTimerManager.updateConfig(newConfig)
-                if (timerStatus.value.canReset) {
-                    fallbackTimerManager.reset()
+                // Update config and reset using service if connected, fallback otherwise
+                if (serviceConnection.isBound()) {
+                    serviceConnection.updateConfig(newConfig)
+                    if (timerStatus.value.canReset) {
+                        serviceConnection.resetTimer()
+                    }
+                } else {
+                    fallbackTimerManager.updateConfig(newConfig)
+                    if (timerStatus.value.canReset) {
+                        fallbackTimerManager.reset()
+                    }
                 }
             }
         } catch (e: IllegalArgumentException) {
