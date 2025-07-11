@@ -445,19 +445,52 @@ private fun TimerDisplay(
     adaptiveSpacing: Dp,
     adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
+    if (timerStatus.state == TimerState.STOPPED) {
         // Show config recap when timer is stopped
-        if (timerStatus.state == TimerState.STOPPED) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             ConfigRecapDisplay(
                 config = timerStatus.config,
                 adaptiveSpacing = adaptiveSpacing
             )
-            Spacer(modifier = Modifier.height(adaptiveSpacing * 2))
+            
+            Spacer(modifier = Modifier.height(adaptiveSpacing * 3))
+            
+            // Show default timer display
+            TimerCenterDisplay(
+                timerStatus = timerStatus,
+                intervalColor = intervalColor,
+                adaptiveSpacing = adaptiveSpacing,
+                adaptiveTimerFontSize = adaptiveTimerFontSize
+            )
         }
+    } else {
+        // Center the timer display when running
+        TimerCenterDisplay(
+            timerStatus = timerStatus,
+            intervalColor = intervalColor,
+            adaptiveSpacing = adaptiveSpacing,
+            adaptiveTimerFontSize = adaptiveTimerFontSize
+        )
+    }
+}
 
+/**
+ * Centered timer display component
+ */
+@Composable
+private fun TimerCenterDisplay(
+    timerStatus: TimerStatus,
+    intervalColor: Color,
+    adaptiveSpacing: Dp,
+    adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
         // Interval type indicator with special handling for BEGIN countdown
         Card(
             modifier = Modifier.padding(bottom = adaptiveSpacing * 2),

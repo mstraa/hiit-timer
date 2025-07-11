@@ -85,19 +85,19 @@ data class TimerStatus(
     
     /**
      * Format time remaining with conditional formatting (FR-019: Timer Display Format Enhancement)
-     * - Less than 60 seconds: "SS.d" format (e.g., "45.3")
-     * - 60 seconds or greater: "MM:SS.d" format (e.g., "01:45.3")
+     * - Less than or equal to 60 seconds: "SS.d" format (e.g., "45.3", "60.0")
+     * - Greater than 60 seconds: "MM:SS.d" format (e.g., "01:45.3")
      */
     fun formatTimeRemaining(): String {
         val minutes = timeRemainingSeconds / 60
         val seconds = timeRemainingSeconds % 60
         val deciseconds = timeRemainingMilliseconds / 100 // Display deciseconds (0-9)
 
-        return if (timeRemainingSeconds < 60) {
-            // FR-019: Show only seconds and deciseconds when less than 60 seconds
+        return if (timeRemainingSeconds <= 60) {
+            // Show only seconds and deciseconds when 60 seconds or less
             String.format("%02d.%01d", timeRemainingSeconds, deciseconds)
         } else {
-            // FR-017: Show full MM:SS.d format when 60 seconds or greater
+            // Show full MM:SS.d format when greater than 60 seconds
             String.format("%02d:%02d.%01d", minutes, seconds, deciseconds)
         }
     }
