@@ -205,7 +205,7 @@ class TimerService : Service() {
                 if (status.state == TimerState.FINISHED) {
                     wakeLockManager.releaseWakeLock()
                     // Keep notification for a few seconds to show completion
-                    delay(5000)
+                    delay(com.hiittimer.app.utils.Constants.NOTIFICATION_DELAY_AFTER_FINISH_MS)
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                         stopForeground(STOP_FOREGROUND_REMOVE)
                     } else {

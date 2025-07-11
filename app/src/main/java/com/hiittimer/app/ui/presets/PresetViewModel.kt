@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.hiittimer.app.data.InMemoryPresetRepository
 import com.hiittimer.app.data.Preset
 import com.hiittimer.app.data.PresetRepository
+import com.hiittimer.app.error.ErrorHandler
+import com.hiittimer.app.utils.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,10 +67,11 @@ class PresetViewModel(
     private fun loadRecentPresets() {
         viewModelScope.launch {
             try {
-                val recentPresets = presetRepository.getRecentPresets(5)
+                val recentPresets = presetRepository.getRecentPresets(com.hiittimer.app.utils.Constants.RECENT_PRESETS_COUNT)
                 _uiState.value = _uiState.value.copy(recentPresets = recentPresets)
             } catch (e: Exception) {
-                // Don't show error for recent presets failure
+                // Don't show error for recent presets failure, but log it
+                Logger.d(ErrorHandler.ErrorCategory.UI_RENDERING, "Failed to load recent presets: ${e.message}")
             }
         }
     }
@@ -144,7 +147,8 @@ class PresetViewModel(
                 presetRepository.updatePreset(updatedPreset)
                 loadRecentPresets()
             } catch (e: Exception) {
-                // Don't show error for usage tracking failure
+                // Don't show error for usage tracking failure, but log it
+                Logger.d(ErrorHandler.ErrorCategory.UI_RENDERING, "Failed to track preset usage: ${e.message}")
             }
         }
     }

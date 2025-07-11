@@ -1,5 +1,6 @@
 package com.hiittimer.app.data
 
+import com.hiittimer.app.utils.Constants
 import java.util.*
 
 /**
@@ -105,7 +106,7 @@ data class WorkoutSession(
             return if (isUnlimited) {
                 completedRounds > 0 // Any rounds completed for unlimited is considered complete
             } else {
-                calculateCompletionPercentage(completedRounds, plannedRounds, false) >= 70f
+                calculateCompletionPercentage(completedRounds, plannedRounds, false) >= Constants.WORKOUT_COMPLETION_THRESHOLD_PERCENT
             }
         }
 
@@ -243,9 +244,9 @@ class InMemoryWorkoutHistoryRepository : WorkoutHistoryRepository {
     override suspend fun getFilteredSessions(filter: WorkoutHistoryFilter): List<WorkoutSession> {
         val now = System.currentTimeMillis()
         val cutoffTime = when (filter.dateFilter) {
-            DateFilter.LAST_7_DAYS -> now - (7 * 24 * 60 * 60 * 1000L)
-            DateFilter.LAST_30_DAYS -> now - (30 * 24 * 60 * 60 * 1000L)
-            DateFilter.LAST_3_MONTHS -> now - (90 * 24 * 60 * 60 * 1000L)
+            DateFilter.LAST_7_DAYS -> now - (Constants.RECENT_WORKOUTS_DAYS_7 * Constants.MILLISECONDS_PER_DAY)
+            DateFilter.LAST_30_DAYS -> now - (Constants.RECENT_WORKOUTS_DAYS_30 * Constants.MILLISECONDS_PER_DAY)
+            DateFilter.LAST_3_MONTHS -> now - (Constants.QUARTERLY_WORKOUTS_DAYS * Constants.MILLISECONDS_PER_DAY)
             DateFilter.ALL_TIME -> 0L
         }
 
@@ -296,7 +297,7 @@ class InMemoryWorkoutHistoryRepository : WorkoutHistoryRepository {
 
     // Analytics methods implementation
     override suspend fun getWeeklyCompletionRate(): Float {
-        val weekAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000L)
+        val weekAgo = System.currentTimeMillis() - (Constants.RECENT_WORKOUTS_DAYS_7 * Constants.MILLISECONDS_PER_DAY)
         val recentSessions = sessions.values.filter { it.startTime >= weekAgo }
         if (recentSessions.isEmpty()) return 0f
 
@@ -305,7 +306,7 @@ class InMemoryWorkoutHistoryRepository : WorkoutHistoryRepository {
     }
 
     override suspend fun getMonthlyCompletionRate(): Float {
-        val monthAgo = System.currentTimeMillis() - (30 * 24 * 60 * 60 * 1000L)
+        val monthAgo = System.currentTimeMillis() - (Constants.MONTHLY_WORKOUTS_DAYS * Constants.MILLISECONDS_PER_DAY)
         val recentSessions = sessions.values.filter { it.startTime >= monthAgo }
         if (recentSessions.isEmpty()) return 0f
 
@@ -340,7 +341,7 @@ class InMemoryWorkoutHistoryRepository : WorkoutHistoryRepository {
         }
 
         val sortedSessions = sessions.values.sortedBy { it.startTime }
-        val dayMs = 24 * 60 * 60 * 1000L
+        val dayMs = Constants.MILLISECONDS_PER_DAY
 
         // Group sessions by day
         val sessionsByDay = sortedSessions.groupBy { session ->
