@@ -50,6 +50,15 @@ class UnifiedTimerViewModel(application: Application) : AndroidViewModel(applica
     // Current workout mode
     val workoutMode: StateFlow<UnifiedTimerManager.WorkoutMode> = unifiedTimerManager.workoutMode
     
+    // Presets for UI
+    val presets: StateFlow<List<Preset>> = flow<List<Preset>> {
+        emit(emptyList()) // TODO: Load presets from a preset repository
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = emptyList<Preset>()
+    )
+    
     // Legacy timer status for backward compatibility
     val timerStatus: StateFlow<TimerStatus> = unifiedTimerState.map { state ->
         TimerStatus(

@@ -19,7 +19,7 @@
         android:theme="@style/Theme.HIITTimer"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".UnifiedMainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.HIITTimer">
@@ -32,7 +32,7 @@
 
         <!-- Timer foreground service for background operation -->
         <service
-            android:name=".service.TimerService"
+            android:name=".service.UnifiedTimerService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />

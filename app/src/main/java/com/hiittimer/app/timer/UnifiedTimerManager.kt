@@ -240,9 +240,17 @@ data class UnifiedTimerState(
          * Create unified state from simple timer status
          */
         fun fromSimpleTimer(status: TimerStatus): UnifiedTimerState {
-            val minutes = status.timeRemainingSeconds / 60
-            val seconds = status.timeRemainingSeconds % 60
-            val displayTime = String.format("%02d:%02d", minutes, seconds)
+            val displayTime = when {
+                // BEGIN countdown - show countdown seconds
+                status.state == TimerState.BEGIN -> {
+                    status.timeRemainingSeconds.toString()
+                }
+                else -> {
+                    val minutes = status.timeRemainingSeconds / 60
+                    val seconds = status.timeRemainingSeconds % 60
+                    String.format("%02d:%02d", minutes, seconds)
+                }
+            }
             
             return UnifiedTimerState(
                 timerState = status.state,
@@ -257,18 +265,22 @@ data class UnifiedTimerState(
                 totalRounds = status.config.totalRounds,
                 intervalType = status.currentInterval,
                 isUnlimited = status.config.isUnlimited,
-                statusText = when (status.currentInterval) {
-                    IntervalType.WORK -> "Work"
-                    IntervalType.REST -> "Rest"
+                statusText = when {
+                    status.state == TimerState.BEGIN -> "Get Ready!"
+                    status.currentInterval == IntervalType.WORK -> "Work"
+                    status.currentInterval == IntervalType.REST -> "Rest"
+                    else -> ""
                 },
                 progressText = if (status.config.isUnlimited) {
                     "Round ${status.currentRound}"
                 } else {
                     "Round ${status.currentRound} of ${status.config.totalRounds}"
                 },
-                backgroundColor = when (status.currentInterval) {
-                    IntervalType.WORK -> androidx.compose.ui.graphics.Color(0xFF4CAF50) // Green
-                    IntervalType.REST -> androidx.compose.ui.graphics.Color(0xFFF44336) // Red
+                backgroundColor = when {
+                    status.state == TimerState.BEGIN -> androidx.compose.ui.graphics.Color(0xFF2196F3) // Blue
+                    status.currentInterval == IntervalType.WORK -> androidx.compose.ui.graphics.Color(0xFF4CAF50) // Green
+                    status.currentInterval == IntervalType.REST -> androidx.compose.ui.graphics.Color(0xFFF44336) // Red
+                    else -> androidx.compose.ui.graphics.Color.Transparent
                 },
                 shouldFlash = status.shouldFlashBlue,
                 countdownText = status.countdownText
@@ -288,6 +300,10 @@ data class UnifiedTimerState(
             val remaining = state.getRemainingSeconds(workout)
             
             val displayTime = when {
+                // BEGIN countdown - show countdown seconds
+                state.timerState == TimerState.BEGIN -> {
+                    state.currentIntervalSeconds.toString()
+                }
                 remaining != null -> {
                     val minutes = remaining / 60
                     val seconds = remaining % 60
@@ -305,7 +321,7 @@ data class UnifiedTimerState(
                 timeRemainingSeconds = remaining ?: 0,
                 isRunning = state.timerState == TimerState.RUNNING,
                 canStart = state.timerState == TimerState.STOPPED || state.timerState == TimerState.FINISHED,
-                canPause = state.timerState == TimerState.RUNNING,
+                canPause = state.timerState == TimerState.RUNNING || state.timerState == TimerState.BEGIN,
                 canResume = state.timerState == TimerState.PAUSED,
                 canReset = state.timerState != TimerState.STOPPED,
                 currentPhaseName = phase?.name,

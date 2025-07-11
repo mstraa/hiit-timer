@@ -112,6 +112,11 @@ data class ComplexTimerState(
      * Get display text for current state
      */
     fun getStatusText(workout: ComplexWorkout): String {
+        // Handle BEGIN phase
+        if (timerState == TimerState.BEGIN) {
+            return "Get Ready!"
+        }
+        
         val phase = getCurrentPhase(workout) ?: return "Workout Complete"
         val exercise = getCurrentExercise(workout) ?: return "Phase Complete"
         
