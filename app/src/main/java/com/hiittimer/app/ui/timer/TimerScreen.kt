@@ -237,7 +237,8 @@ private fun PortraitTimerLayout(
                 timerStatus = timerStatus,
                 intervalColor = intervalColor,
                 adaptiveSpacing = adaptiveSpacing,
-                adaptiveTimerFontSize = adaptiveTimerFontSize
+                adaptiveTimerFontSize = adaptiveTimerFontSize,
+                viewModel = viewModel
             )
         }
 
@@ -302,7 +303,8 @@ private fun LandscapeTimerLayout(
                     timerStatus = timerStatus,
                     intervalColor = intervalColor,
                     adaptiveSpacing = adaptiveSpacing,
-                    adaptiveTimerFontSize = adaptiveTimerFontSize
+                    adaptiveTimerFontSize = adaptiveTimerFontSize,
+                    viewModel = viewModel
                 )
             }
 
@@ -443,10 +445,11 @@ private fun TimerDisplay(
     timerStatus: TimerStatus,
     intervalColor: Color,
     adaptiveSpacing: Dp,
-    adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit
+    adaptiveTimerFontSize: androidx.compose.ui.unit.TextUnit,
+    viewModel: TimerViewModel
 ) {
     if (timerStatus.state == TimerState.STOPPED) {
-        // Show config recap when timer is stopped
+        // Show config recap and big start button when timer is stopped
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -458,13 +461,28 @@ private fun TimerDisplay(
             
             Spacer(modifier = Modifier.height(adaptiveSpacing * 3))
             
-            // Show default timer display
-            TimerCenterDisplay(
-                timerStatus = timerStatus,
-                intervalColor = intervalColor,
-                adaptiveSpacing = adaptiveSpacing,
-                adaptiveTimerFontSize = adaptiveTimerFontSize
-            )
+            // Big square start button
+            Button(
+                onClick = { viewModel.startTimer() },
+                modifier = Modifier
+                    .size(200.dp) // Square button
+                    .padding(adaptiveSpacing),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "START",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     } else {
         // Center the timer display when running
@@ -571,6 +589,13 @@ private fun TimerControls(
     viewModel: TimerViewModel,
     isVertical: Boolean = false
 ) {
+    // Hide controls when timer is in STOPPED state
+    if (timerStatus.state == TimerState.STOPPED) {
+        // Empty space to maintain layout
+        Spacer(modifier = Modifier.height(adaptiveButtonHeight + adaptiveSpacing * 2))
+        return
+    }
+    
     if (isVertical) {
         // Vertical layout for landscape mode
         Column(
@@ -585,12 +610,14 @@ private fun TimerControls(
                 isPrimary = true
             )
 
-            TimerButton(
-                timerStatus = timerStatus,
-                adaptiveButtonHeight = adaptiveButtonHeight,
-                viewModel = viewModel,
-                isPrimary = false
-            )
+            if (timerStatus.canReset) {
+                TimerButton(
+                    timerStatus = timerStatus,
+                    adaptiveButtonHeight = adaptiveButtonHeight,
+                    viewModel = viewModel,
+                    isPrimary = false
+                )
+            }
         }
     } else {
         // Horizontal layout for portrait mode (FR-016: 80%/20% width split)
@@ -606,17 +633,19 @@ private fun TimerControls(
                 adaptiveButtonHeight = adaptiveButtonHeight,
                 viewModel = viewModel,
                 isPrimary = true,
-                modifier = Modifier.weight(0.8f)
+                modifier = if (timerStatus.canReset) Modifier.weight(0.8f) else Modifier.fillMaxWidth()
             )
 
-            // Reset button occupying 20% of control area width (FR-016)
-            TimerButton(
-                timerStatus = timerStatus,
-                adaptiveButtonHeight = adaptiveButtonHeight,
-                viewModel = viewModel,
-                isPrimary = false,
-                modifier = Modifier.weight(0.2f)
-            )
+            // Reset button occupying 20% of control area width (FR-016) - only show if canReset
+            if (timerStatus.canReset) {
+                TimerButton(
+                    timerStatus = timerStatus,
+                    adaptiveButtonHeight = adaptiveButtonHeight,
+                    viewModel = viewModel,
+                    isPrimary = false,
+                    modifier = Modifier.weight(0.2f)
+                )
+            }
         }
     }
 }
