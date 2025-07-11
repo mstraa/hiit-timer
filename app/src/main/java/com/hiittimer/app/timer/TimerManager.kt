@@ -293,8 +293,8 @@ class TimerManager(
     private fun updateRunningTimer(newSeconds: Int, newMilliseconds: Int) {
         val currentStatus = _timerStatus.value
         
-        // Handle audio cues for last 3 seconds
-        if (newSeconds in 1..3 && newMilliseconds <= 100 && newSeconds != currentStatus.timeRemainingSeconds) {
+        // Handle audio cues for last countdown seconds
+        if (newSeconds in 1..com.hiittimer.app.utils.Constants.COUNTDOWN_BEEP_START_SECONDS && newMilliseconds <= 100 && newSeconds != currentStatus.timeRemainingSeconds) {
             audioManager?.playCountdownBeep()
         }
 

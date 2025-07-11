@@ -22,7 +22,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hiittimer.app.data.Preset
 import com.hiittimer.app.data.TimerConfig
-import com.hiittimer.app.ui.preset.PresetViewModel
+import com.hiittimer.app.ui.presets.PresetViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,8 +34,9 @@ fun PresetModal(
     onPresetSelected: (Preset) -> Unit,
     viewModel: PresetViewModel = viewModel()
 ) {
-    val presets by viewModel.presets.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val presets = uiState.presets
+    val isLoading = uiState.isLoading
     val coroutineScope = rememberCoroutineScope()
     var showCreateDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -136,7 +137,7 @@ fun PresetModal(
                                     preset = preset,
                                     onUsePreset = { 
                                         coroutineScope.launch {
-                                            viewModel.markPresetAsUsed(preset)
+                                            viewModel.usePreset(preset)
                                             onPresetSelected(preset)
                                         }
                                     },
@@ -171,39 +172,43 @@ fun PresetModal(
         }
 
         // Edit preset dialog
-        if (showEditDialog && presetToEdit != null) {
-            EditPresetDialog(
-                preset = presetToEdit!!,
-                onDismiss = { 
-                    showEditDialog = false
-                    presetToEdit = null
-                },
-                onSave = { updatedPreset ->
-                    coroutineScope.launch {
-                        viewModel.updatePreset(updatedPreset)
+        presetToEdit?.let { preset ->
+            if (showEditDialog) {
+                EditPresetDialog(
+                    preset = preset,
+                    onDismiss = { 
                         showEditDialog = false
                         presetToEdit = null
+                    },
+                    onSave = { updatedPreset ->
+                        coroutineScope.launch {
+                            viewModel.updatePreset(updatedPreset)
+                            showEditDialog = false
+                            presetToEdit = null
+                        }
                     }
-                }
-            )
+                )
+            }
         }
 
         // Delete confirmation dialog
-        if (showDeleteDialog && presetToDelete != null) {
-            DeletePresetDialog(
-                preset = presetToDelete,
-                onDismiss = { 
-                    showDeleteDialog = false
-                    presetToDelete = null
-                },
-                onConfirm = {
-                    coroutineScope.launch {
-                        viewModel.deletePreset(presetToDelete!!.id)
+        presetToDelete?.let { preset ->
+            if (showDeleteDialog) {
+                DeletePresetDialog(
+                    preset = preset,
+                    onDismiss = { 
                         showDeleteDialog = false
                         presetToDelete = null
+                    },
+                    onConfirm = {
+                        coroutineScope.launch {
+                            viewModel.deletePreset(preset.id)
+                            showDeleteDialog = false
+                            presetToDelete = null
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }
